@@ -56,15 +56,21 @@ export function ManufacturerDashboard() {
   }, []);
 
   // Try to fetch on-chain RMS pool (new contract function). Gracefully ignore if missing.
-  const { data: rmsPoolOnChain } = useReadContract({
+  const { data: rmsPoolOnChain, refetch: refetchRmsPool } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: 'getRawMaterialSupplierPool',
     query: {
       enabled: true,
-      staleTime: 60_000,
+      staleTime: 10_000, // Reduced to 10 seconds
+      refetchInterval: 15_000, // Auto-refetch every 15 seconds
     },
   });
+
+  // Debug: Log RMS pool data
+  useEffect(() => {
+    console.log('RMS Pool from chain:', rmsPoolOnChain);
+  }, [rmsPoolOnChain]);
 
   useEffect(() => {
     if (Array.isArray(rmsPoolOnChain) && rmsPoolOnChain.length > 0) {
