@@ -18,6 +18,7 @@ export function ManufacturerDashboard() {
   const [productDesc, setProductDesc] = useState('');
   const [productImageUri, setProductImageUri] = useState('');
   const [productPrice, setProductPrice] = useState('');
+  const [deliveryDays, setDeliveryDays] = useState('7'); // Default 7 days
   const [selectedRms, setSelectedRms] = useState('');
   const [suppliers, setSuppliers] = useState([]);
   const [newSupplier, setNewSupplier] = useState('');
@@ -159,6 +160,7 @@ export function ManufacturerDashboard() {
       setProductDesc('');
       setProductImageUri('');
       setProductPrice('');
+      setDeliveryDays('7'); // Reset to default
       queryClient.invalidateQueries();
     }
   }, [isListSuccess, queryClient]);
@@ -284,6 +286,20 @@ export function ManufacturerDashboard() {
       showError('Validation Error', 'Please fill in all required fields');
       return;
     }
+
+    const days = parseInt(deliveryDays) || 7;
+    if (days < 1 || days > 30) {
+      showError('Validation Error', 'Delivery days must be between 1 and 30');
+      return;
+    }
+
+    // Save delivery days to localStorage (will be associated with product name for now)
+    // In a real app, this would be stored with the product ID after transaction confirms
+    try {
+      const deliveryData = JSON.parse(localStorage.getItem('product_delivery_days') || '{}');
+      deliveryData[productName.toLowerCase().trim()] = days;
+      localStorage.setItem('product_delivery_days', JSON.stringify(deliveryData));
+    } catch (_) { }
 
     const priceInWei = BigInt(Math.floor(parseFloat(productPrice) * 1e18));
     const imageUri = productImageUri.trim() || ''; // Allow empty image URI
@@ -425,6 +441,20 @@ export function ManufacturerDashboard() {
               value={productPrice}
               onChange={(e) => setProductPrice(e.target.value)}
             />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Estimated Delivery (Days)</label>
+            <Input
+              type="number"
+              min="1"
+              max="30"
+              placeholder="7"
+              value={deliveryDays}
+              onChange={(e) => setDeliveryDays(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              How many days will it take to deliver this product? (1-30 days)
+            </p>
           </div>
           <Button
             onClick={handleListProduct}
