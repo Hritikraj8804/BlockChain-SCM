@@ -116,6 +116,7 @@ contract AISupplyChain {
     
     event ActorRegistered(address indexed actor, ActorRole role);
     event ProductListed(uint256 indexed productId, address indexed manufacturer, string name);
+    event ProductUpdated(uint256 indexed productId, string name, uint256 price);
     event OrderPlaced(uint256 indexed bookingId, uint256 indexed productId, address indexed consumer);
     event MaterialsRequested(uint256 indexed bookingId, address indexed rms);
     event MaterialsDispatched(uint256 indexed bookingId, address indexed rms);
@@ -217,6 +218,25 @@ contract AISupplyChain {
     function deactivateProduct(uint256 _productId) external {
         require(products[_productId].manufacturer == msg.sender, "Not your product");
         products[_productId].isActive = false;
+    }
+
+    function updateProduct(
+        uint256 _productId,
+        string memory _name,
+        string memory _imageUri,
+        string memory _description,
+        uint256 _price
+    ) external {
+        require(products[_productId].manufacturer == msg.sender, "Not your product");
+        require(products[_productId].isActive, "Product is not active");
+
+        Product storage product = products[_productId];
+        product.name = _name;
+        product.imageUri = _imageUri;
+        product.description = _description;
+        product.price = _price;
+
+        emit ProductUpdated(_productId, _name, _price);
     }
     
     // ==================== ORDER WORKFLOW ====================

@@ -1,6 +1,6 @@
 // Contract ABI and Address
 // Replace CONTRACT_ADDRESS with your deployed contract address
-export const CONTRACT_ADDRESS = "0x9A676e781A523b5d0C0e43731313A708CB607508"; // TODO: Replace with actual address
+export const CONTRACT_ADDRESS = "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c"; // TODO: Replace with actual address
 
 export const CONTRACT_ABI = [
 	{
@@ -138,7 +138,7 @@ export const CONTRACT_ABI = [
 				"type": "uint256"
 			},
 			{
-				"indexed": true,
+				"indexed": false,
 				"internalType": "address",
 				"name": "manufacturer",
 				"type": "address"
@@ -151,6 +151,31 @@ export const CONTRACT_ABI = [
 			}
 		],
 		"name": "ProductListed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "productId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "name",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"name": "ProductUpdated",
 		"type": "event"
 	},
 	{
@@ -1547,6 +1572,39 @@ export const CONTRACT_ABI = [
 			}
 		],
 		"name": "updateReturnWindow",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_productId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "_name",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_imageUri",
+				"type": "string"
+			},
+			{
+				"internalType": "string",
+				"name": "_description",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_price",
+				"type": "uint256"
+			}
+		],
+		"name": "updateProduct",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"

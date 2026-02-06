@@ -22,6 +22,7 @@ export function ManufacturerDashboard() {
   const [selectedRms, setSelectedRms] = useState('');
   const [suppliers, setSuppliers] = useState([]);
   const [newSupplier, setNewSupplier] = useState('');
+  const [editingProductId, setEditingProductId] = useState(null);
   const queryClient = useQueryClient();
 
   // Get manufacturer orders (with auto-refresh for real-time updates)
@@ -65,6 +66,12 @@ export function ManufacturerDashboard() {
       staleTime: 10_000, // Reduced to 10 seconds
       refetchInterval: 15_000, // Auto-refetch every 15 seconds
     },
+  });
+
+  const { data: activeProducts, refetch: refetchProducts } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getActiveProducts',
   });
 
   // Debug: Log RMS pool data
@@ -126,6 +133,16 @@ export function ManufacturerDashboard() {
     hash: listHash,
   });
 
+  const { writeContract: writeUpdateProduct, data: updateHash, isPending: isUpdating, error: updateError } = useWriteContract();
+  const { isLoading: isUpdateConfirming, isSuccess: isUpdateSuccess, isError: isUpdateTxError } = useWaitForTransactionReceipt({
+    hash: updateHash,
+  });
+
+  const { writeContract: writeDeactivateProduct, data: deactivateHash, isPending: isDeactivating, error: deactivateError } = useWriteContract();
+  const { isLoading: isDeactivateConfirming, isSuccess: isDeactivateSuccess, isError: isDeactivateTxError } = useWaitForTransactionReceipt({
+    hash: deactivateHash,
+  });
+
   const { writeContract: writeRequestMaterials, data: requestHash, isPending: isRequesting, error: requestError } = useWriteContract();
   const { isLoading: isRequestConfirming, isSuccess: isRequestSuccess, isError: isRequestTxError } = useWaitForTransactionReceipt({
     hash: requestHash,
@@ -176,6 +193,57 @@ export function ManufacturerDashboard() {
       showError('Failed to list product', listError?.message || 'Please try again');
     }
   }, [listError, isListTxError]);
+
+  // Notifications for Update Product
+  useEffect(() => {
+    if (isUpdating) showLoading('Updating product...', 'Saving changes to blockchain');
+  }, [isUpdating]);
+  useEffect(() => {
+    if (isUpdateConfirming) showLoading('Confirming update...', 'Transaction is being confirmed');
+  }, [isUpdateConfirming]);
+  useEffect(() => {
+    if (isUpdateSuccess) {
+      closeAlert();
+      showSuccess('Product updated!', 'Your changes are live');
+      setProductName('');
+      setProductDesc('');
+      setProductImageUri('');
+      setProductPrice('');
+      setEditingProductId(null);
+      queryClient.invalidateQueries();
+    }
+  }, [isUpdateSuccess, queryClient]);
+  useEffect(() => {
+    if (updateError || isUpdateTxError) {
+      closeAlert();
+      showError('Update failed', updateError?.message);
+    }
+  }, [updateError, isUpdateTxError]);
+
+  // Notifications for Deactivate Product
+  useEffect(() => {
+    if (isDeactivating) showLoading('Deactivating product...', 'Removing product from marketplace');
+  }, [isDeactivating]);
+  useEffect(() => {
+    if (isDeactivateConfirming) showLoading('Confirming deactivation...', 'Transaction is being confirmed');
+  }, [isDeactivateConfirming]);
+  useEffect(() => {
+    if (isDeactivateSuccess) {
+      closeAlert();
+      showSuccess('Product removed', 'Product is no longer listed');
+      queryClient.invalidateQueries();
+    }
+  }, [isDeactivateSuccess, queryClient]);
+  useEffect(() => {
+    if (deactivateError || isDeactivateTxError) {
+      closeAlert();
+      showError('Deactivation failed', deactivateError?.message);
+    }
+  }, [deactivateError, isDeactivateTxError]);
+
+
+
+
 
   // SweetAlert notifications for request materials
   useEffect(() => {
@@ -319,6 +387,71 @@ export function ManufacturerDashboard() {
     });
   };
 
+  const handleUpdateProduct = () => {
+    if (!editingProductId || !productName || !productDesc || !productPrice) return;
+
+    // Save delivery days
+    try {
+      const days = parseInt(deliveryDays) || 7;
+      const deliveryData = JSON.parse(localStorage.getItem('product_delivery_days') || '{}');
+      deliveryData[productName.toLowerCase().trim()] = days;
+      localStorage.setItem('product_delivery_days', JSON.stringify(deliveryData));
+    } catch (_) { }
+
+    const priceInWei = BigInt(Math.floor(parseFloat(productPrice) * 1e18));
+    const imageUri = productImageUri.trim() || '';
+
+    showLoading(`Updating ${productName}...`, 'Saving changes to blockchain');
+
+    writeUpdateProduct({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'updateProduct',
+      args: [editingProductId, productName, imageUri, productDesc, priceInWei],
+    });
+  };
+
+  const handleDeactivateProduct = (productId) => {
+    /* eslint-disable no-restricted-globals */
+    if (!confirm('Are you sure you want to delete this product? This cannot be undone.')) return;
+    /* eslint-enable no-restricted-globals */
+
+    showLoading('Deleting product...', 'Removing from marketplace');
+
+    writeDeactivateProduct({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'deactivateProduct',
+      args: [BigInt(productId)],
+    });
+  };
+
+  const handleEditClick = (product) => {
+    setEditingProductId(product.productId);
+    setProductName(product.name);
+    setProductDesc(product.description);
+    setProductImageUri(product.imageUri);
+    setProductPrice(formatUnits(product.price, 18));
+    // Try to recover delivery days from local storage
+    try {
+      const deliveryData = JSON.parse(localStorage.getItem('product_delivery_days') || '{}');
+      const days = deliveryData[product.name.toLowerCase().trim()];
+      if (days) setDeliveryDays(days.toString());
+    } catch (_) { }
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProductId(null);
+    setProductName('');
+    setProductDesc('');
+    setProductImageUri('');
+    setProductPrice('');
+    setDeliveryDays('7');
+  };
+
   const handleRequestMaterials = (bookingId) => {
     if (!selectedRms) {
       showError('Validation Error', 'Please select a supplier');
@@ -407,7 +540,7 @@ export function ManufacturerDashboard() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
-            Product Management
+            {editingProductId ? 'Edit Product' : 'Add New Product'}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -462,12 +595,99 @@ export function ManufacturerDashboard() {
               How many days will it take to deliver this product? (1-30 days)
             </p>
           </div>
-          <Button
-            onClick={handleListProduct}
-            disabled={isListing || isListingConfirming || !productName || !productDesc || !productPrice}
-          >
-            {isListing || isListingConfirming ? 'Listing...' : 'List Product'}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              className="flex-1"
+              onClick={editingProductId ? handleUpdateProduct : handleListProduct}
+              disabled={isListing || isListingConfirming || isUpdating || isUpdateConfirming || !productName || !productDesc || !productPrice}
+            >
+              {editingProductId
+                ? (isUpdating || isUpdateConfirming ? 'Updating...' : 'Update Product')
+                : (isListing || isListingConfirming ? 'Listing...' : 'List Product')
+              }
+            </Button>
+            {editingProductId && (
+              <Button variant="outline" onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Your Active Products Section */}
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              Your Active Products
+            </CardTitle>
+            <Button size="sm" variant="outline" onClick={() => refetchProducts()}>
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!activeProducts || activeProducts.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No active products found.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeProducts
+                .filter(p => p.manufacturer.toLowerCase() === address?.toLowerCase())
+                .map((product) => (
+                  <Card key={product.productId.toString()} className="overflow-hidden border-border/60">
+                    <div className="aspect-video bg-muted relative">
+                      {product.imageUri ? (
+                        <img src={product.imageUri} alt={product.name} className="w-full h-full object-cover" onError={(e) => e.target.style.display = 'none'} />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground/50">
+                          No Image
+                        </div>
+                      )}
+                      <div className="absolute top-2 right-2 flex gap-1">
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background"
+                          onClick={() => handleEditClick(product)}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                          </svg>
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          className="h-8 w-8 opacity-90 hover:opacity-100"
+                          onClick={() => handleDeactivateProduct(product.productId)}
+                          disabled={isDeactivating || isDeactivateConfirming}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-semibold truncate pr-2">{product.name}</h3>
+                        <span className="font-mono text-sm font-medium">
+                          {formatUnits(product.price, 18)} ETH
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                        {product.description}
+                      </p>
+                    </div>
+                  </Card>
+                ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
