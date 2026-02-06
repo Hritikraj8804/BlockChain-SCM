@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/constants/contract';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatUnits } from 'viem';
@@ -18,6 +19,8 @@ export function ManufacturerDashboard() {
   const [productImageUri, setProductImageUri] = useState('');
   const [productPrice, setProductPrice] = useState('');
   const [selectedRms, setSelectedRms] = useState('');
+  const [suppliers, setSuppliers] = useState([]);
+  const [newSupplier, setNewSupplier] = useState('');
   const queryClient = useQueryClient();
 
   // Get manufacturer orders (with auto-refresh for real-time updates)
@@ -38,6 +41,78 @@ export function ManufacturerDashboard() {
 
   // Fetch order details (simplified - in production, fetch each individually)
   const orders = orderIds || [];
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('rms_suppliers') || '[]');
+      if (Array.isArray(saved)) {
+        setSuppliers(saved);
+        if (!selectedRms && saved.length > 0) {
+          setSelectedRms(saved[0]);
+        }
+      }
+    } catch (_) { }
+  }, []);
+
+  // Try to fetch on-chain RMS pool (new contract function). Gracefully ignore if missing.
+  const { data: rmsPoolOnChain } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getRawMaterialSupplierPool',
+    query: {
+      enabled: true,
+      staleTime: 60_000,
+    },
+  });
+
+  useEffect(() => {
+    if (Array.isArray(rmsPoolOnChain) && rmsPoolOnChain.length > 0) {
+      const unique = Array.from(new Set([...
+        suppliers,
+      ...rmsPoolOnChain,
+      ].map((a) => a.toLowerCase())));
+      // Preserve original casing from chain where possible
+      const merged = unique.map((addrLower) => {
+        const fromChain = rmsPoolOnChain.find((a) => a.toLowerCase() === addrLower);
+        return fromChain || suppliers.find((a) => a.toLowerCase() === addrLower) || addrLower;
+      });
+      setSuppliers(merged);
+      if (!selectedRms && merged.length > 0) {
+        setSelectedRms(merged[0]);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rmsPoolOnChain]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rms_suppliers', JSON.stringify(suppliers));
+    } catch (_) { }
+  }, [suppliers]);
+
+  const handleAddSupplier = () => {
+    const addr = newSupplier.trim();
+    if (!addr || !/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+      showError('Invalid address', 'Please enter a valid Ethereum address');
+      return;
+    }
+    if (suppliers.includes(addr)) {
+      showError('Already added', 'This supplier is already in the list');
+      return;
+    }
+    const next = [...suppliers, addr];
+    setSuppliers(next);
+    setSelectedRms(addr);
+    setNewSupplier('');
+  };
+
+  const handleRemoveSupplier = (addr) => {
+    const next = suppliers.filter((a) => a !== addr);
+    setSuppliers(next);
+    if (selectedRms === addr) {
+      setSelectedRms(next[0] || '');
+    }
+  };
 
   const { writeContract: writeListProduct, data: listHash, isPending: isListing, error: listError } = useWriteContract();
   const { isLoading: isListingConfirming, isSuccess: isListSuccess, isError: isListTxError } = useWaitForTransactionReceipt({
@@ -224,7 +299,7 @@ export function ManufacturerDashboard() {
 
   const handleRequestMaterials = (bookingId) => {
     if (!selectedRms) {
-      showError('Validation Error', 'Please enter RMS address');
+      showError('Validation Error', 'Please select a supplier');
       return;
     }
 
@@ -287,33 +362,26 @@ export function ManufacturerDashboard() {
   };
 
   return (
-    <div className="relative space-y-8 p-8 bg-gradient-to-br from-slate-900 via-blue-900/30 to-purple-900/30 min-h-screen overflow-hidden">
-      <MetaverseParticles count={15} />
-      <BlockchainNode delay={0} position={{ x: 5, y: 10 }} color="#3B82F6" />
-      <BlockchainNode delay={0.5} position={{ x: 95, y: 15 }} color="#8B5CF6" />
-
+    <div className="relative space-y-6 p-6 lg:p-8 bg-background min-h-screen max-w-6xl mx-auto">
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative z-10 flex items-center gap-4 mb-6"
+        transition={{ duration: 0.35 }}
+        className="flex items-start justify-between gap-4"
       >
-        <motion.div
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-2xl"
-        >
-          <span className="text-3xl">🏭</span>
-        </motion.div>
-        <div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Manufacturer Dashboard
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+            Manufacturer
           </h1>
-          <p className="text-gray-300 mt-2 text-lg font-medium">Manage products and production orders</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage products, production, and returns.
+          </p>
         </div>
       </motion.div>
 
-      <Card className="shadow-glow border-blue-500/20 bg-slate-800/80 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-b border-blue-500/20">
-          <CardTitle className="text-xl font-bold text-blue-300 flex items-center gap-2">
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
@@ -322,7 +390,7 @@ export function ManufacturerDashboard() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Product Name</label>
+            <label className="text-sm font-medium text-foreground">Product Name</label>
             <Input
               placeholder="Enter product name"
               value={productName}
@@ -330,18 +398,18 @@ export function ManufacturerDashboard() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Image URI</label>
+            <label className="text-sm font-medium text-foreground">Image URL</label>
             <Input
               placeholder="https://example.com/image.jpg or ipfs://..."
               value={productImageUri}
               onChange={(e) => setProductImageUri(e.target.value)}
             />
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground">
               Enter image URL (HTTP/HTTPS, IPFS, or data URI). Leave empty if no image.
             </p>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Description</label>
+            <label className="text-sm font-medium text-foreground">Description</label>
             <Input
               placeholder="Enter product description"
               value={productDesc}
@@ -349,7 +417,7 @@ export function ManufacturerDashboard() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Price (ETH)</label>
+            <label className="text-sm font-medium text-foreground">Price (ETH)</label>
             <Input
               type="number"
               step="0.001"
@@ -367,10 +435,10 @@ export function ManufacturerDashboard() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-glow border-blue-500/20 bg-slate-800/80 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-b border-blue-500/20">
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-blue-300 flex items-center gap-2">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
@@ -380,7 +448,7 @@ export function ManufacturerDashboard() {
               size="sm"
               variant="outline"
               onClick={() => refetchOrders()}
-              className="border-green-400 text-green-300 hover:bg-green-500/20"
+              className="border-border/60"
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -392,12 +460,42 @@ export function ManufacturerDashboard() {
         <CardContent>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-300">RMS Address (for material requests)</label>
-              <Input
-                placeholder="0x..."
-                value={selectedRms}
-                onChange={(e) => setSelectedRms(e.target.value)}
-              />
+              <label className="text-sm font-medium text-foreground">Raw Material Supplier</label>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <div className="md:col-span-2">
+                  <Select value={selectedRms} onChange={(e) => setSelectedRms(e.target.value)}>
+                    {suppliers.length === 0 ? (
+                      <option value="" disabled>
+                        No suppliers yet — add one below
+                      </option>
+                    ) : null}
+                    {suppliers.map((addr) => (
+                      <option key={addr} value={addr}>
+                        {addr.slice(0, 6)}…{addr.slice(-4)}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add supplier 0x..."
+                    value={newSupplier}
+                    onChange={(e) => setNewSupplier(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button onClick={handleAddSupplier} variant="outline" className="shrink-0">
+                    Add
+                  </Button>
+                </div>
+              </div>
+              {selectedRms && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="font-mono">{selectedRms}</span>
+                  <Button onClick={() => handleRemoveSupplier(selectedRms)} size="sm" variant="outline" className="h-7 px-2">
+                    Remove
+                  </Button>
+                </div>
+              )}
             </div>
 
             {orders.length > 0 ? (
@@ -430,7 +528,7 @@ export function ManufacturerDashboard() {
                 </TableBody>
               </Table>
             ) : (
-              <div className="text-center text-gray-400 py-4">
+              <div className="text-center text-muted-foreground py-4">
                 No orders assigned to you yet.
               </div>
             )}

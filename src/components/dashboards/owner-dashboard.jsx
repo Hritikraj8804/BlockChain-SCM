@@ -135,16 +135,16 @@ export function OwnerDashboard() {
       toast.error('Please enter an actor address');
       return;
     }
-    
+
     const roleNames = {
       '0': 'Consumer',
       '1': 'Manufacturer',
       '2': 'Raw Material Supplier',
       '3': 'Distributor',
     };
-    
+
     toast.loading(`Registering ${roleNames[selectedRole]}...`, { id: 'register-actor' });
-    
+
     writeContract({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
@@ -154,24 +154,19 @@ export function OwnerDashboard() {
   };
 
   return (
-    <div className="space-y-8 p-8 bg-gradient-to-br from-slate-900 via-blue-900/30 to-purple-900/30 min-h-screen">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-14 h-14 rounded-xl gradient-primary flex items-center justify-center shadow-lg">
-          <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-        </div>
-        <div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Owner Dashboard
+    <div className="space-y-6 p-6 lg:p-8 bg-background min-h-screen max-w-5xl mx-auto">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+            Professional Dashboard
           </h1>
-          <p className="text-gray-300 mt-1">Manage actors and monitor system</p>
+          <p className="text-sm text-muted-foreground mt-1">Manage actors and monitor the system.</p>
         </div>
       </div>
 
-      <Card className="shadow-glow border-blue-500/20 bg-slate-800/80 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-b border-blue-500/20">
-          <CardTitle className="text-xl font-bold text-blue-300 flex items-center gap-2">
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
@@ -180,7 +175,7 @@ export function OwnerDashboard() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Actor Address</label>
+            <label className="text-sm font-medium text-foreground">Actor Address</label>
             <Input
               placeholder="0x..."
               value={actorAddress}
@@ -188,7 +183,7 @@ export function OwnerDashboard() {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Role</label>
+            <label className="text-sm font-medium text-foreground">Role</label>
             <Select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
               <option value="0">Consumer (C: 0)</option>
               <option value="1">Manufacturer (MFR: 1)</option>
@@ -206,62 +201,62 @@ export function OwnerDashboard() {
       </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="shadow-glow border-blue-500/20 bg-gradient-to-br from-blue-900/30 to-slate-800 backdrop-blur-sm hover:shadow-xl transition-shadow">
+        <Card className="border border-border/60 bg-card/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
               Total Products
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-400">{productCounter?.toString() || '0'}</div>
-            <p className="text-xs text-gray-400 mt-1">Active in marketplace</p>
+            <div className="text-3xl font-semibold text-foreground">{productCounter?.toString() || '0'}</div>
+            <p className="text-xs text-muted-foreground mt-1">Active in marketplace</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-glow border-purple-500/20 bg-gradient-to-br from-purple-900/30 to-slate-800 backdrop-blur-sm hover:shadow-xl transition-shadow">
+        <Card className="border border-border/60 bg-card/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
               Total Orders
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-400">{orderCounter?.toString() || '0'}</div>
-            <p className="text-xs text-gray-400 mt-1">All time orders</p>
+            <div className="text-3xl font-semibold text-foreground">{orderCounter?.toString() || '0'}</div>
+            <p className="text-xs text-muted-foreground mt-1">All time orders</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-glow border-indigo-500/20 bg-gradient-to-br from-indigo-900/30 to-slate-800 backdrop-blur-sm hover:shadow-xl transition-shadow">
+        <Card className="border border-border/60 bg-card/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-indigo-500"></div>
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
               Distributors
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-indigo-400">{distributorPool?.length || 0}</div>
-            <p className="text-xs text-gray-400 mt-1">In the pool</p>
+            <div className="text-3xl font-semibold text-foreground">{distributorPool?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">In the pool</p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-glow border-red-500/20 bg-gradient-to-br from-red-900/30 to-slate-800 backdrop-blur-sm hover:shadow-xl transition-shadow">
+        <Card className="border border-border/60 bg-card/50">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-400 flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
               Total Returns
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-400">{returnCounter?.toString() || '0'}</div>
-            <p className="text-xs text-gray-400 mt-1">Return requests</p>
+            <div className="text-3xl font-semibold text-foreground">{returnCounter?.toString() || '0'}</div>
+            <p className="text-xs text-muted-foreground mt-1">Return requests</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="shadow-glow border-orange-500/20 bg-slate-800/80 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border-b border-orange-500/20">
-          <CardTitle className="text-xl font-bold text-orange-300 flex items-center gap-2">
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -270,13 +265,13 @@ export function OwnerDashboard() {
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Current Return Window</label>
-            <div className="text-lg font-semibold text-orange-400">
+            <label className="text-sm font-medium text-foreground">Current Return Window</label>
+            <div className="text-lg font-semibold text-foreground">
               {returnWindow ? `${Number(returnWindow) / 86400} days` : 'Loading...'}
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">New Return Window (Days)</label>
+            <label className="text-sm font-medium text-foreground">New Return Window (Days)</label>
             <Input
               type="number"
               placeholder="e.g., 7"
@@ -288,16 +283,15 @@ export function OwnerDashboard() {
           <Button
             onClick={handleUpdateReturnWindow}
             disabled={isUpdatingWindow || isUpdatingWindowConfirming || !returnWindowDays}
-            className="bg-orange-600 hover:bg-orange-700 text-white"
           >
             {isUpdatingWindow || isUpdatingWindowConfirming ? 'Updating...' : 'Update Return Window'}
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="shadow-glow border-blue-500/20 bg-slate-800/80 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-b border-blue-500/20">
-          <CardTitle className="text-xl font-bold text-blue-300 flex items-center gap-2">
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
@@ -323,16 +317,16 @@ export function OwnerDashboard() {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center text-gray-400 py-4">
+            <div className="text-center text-muted-foreground py-4">
               No distributors registered yet.
             </div>
           )}
         </CardContent>
       </Card>
 
-      <Card className="shadow-glow border-blue-500/20 bg-slate-800/80 backdrop-blur-sm">
-        <CardHeader className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-b border-blue-500/20">
-          <CardTitle className="text-xl font-bold text-blue-300 flex items-center gap-2">
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
@@ -360,7 +354,7 @@ export function OwnerDashboard() {
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center text-gray-400 py-4">
+            <div className="text-center text-muted-foreground py-4">
               No orders in the system yet.
             </div>
           )}

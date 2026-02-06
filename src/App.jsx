@@ -26,13 +26,13 @@ function App() {
       isConnected,
       ownerAddress,
     });
-    
+
     if (ownerError) {
       console.error('Contract owner() call failed:', ownerError);
       console.log('Contract address:', CONTRACT_ADDRESS);
       console.log('Make sure the contract is deployed at this address');
     }
-    
+
     if (roleError) {
       console.error('Contract getActorRole() call failed:', roleError);
     }
@@ -102,9 +102,9 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900/30 to-purple-900/30">
+    <div className="min-h-screen bg-background">
       {isConnected && <Header />}
-      <div className="flex">
+      <div className="flex max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6">
         {isConnected && <Sidebar />}
         <main className="flex-1 overflow-auto">
           {renderDashboard()}

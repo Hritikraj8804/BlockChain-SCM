@@ -10,7 +10,7 @@ import { formatUnits } from 'viem';
 import { AIOrderSummary } from '@/components/ai-order-summary';
 import { ReturnRequestModal } from '@/components/return-request-modal';
 import { showLoading, showSuccess, showError, closeAlert } from '@/lib/sweetalert';
-import { ProductCard3D, MetaverseParticles, AnimatedCart, BlockchainNode } from '@/components/3d-elements';
+import { ProductCard3D, AnimatedCart } from '@/components/3d-elements';
 
 export function ConsumerDashboard() {
   const { address } = useAccount();
@@ -130,44 +130,35 @@ export function ConsumerDashboard() {
   };
 
   return (
-    <div className="relative space-y-8 p-8 bg-gradient-to-br from-slate-900 via-blue-900/30 to-purple-900/30 min-h-screen overflow-hidden">
-      {/* Metaverse Background Elements */}
-      <MetaverseParticles count={20} />
-      <BlockchainNode delay={0} position={{ x: 5, y: 10 }} color="#3B82F6" />
-      <BlockchainNode delay={0.5} position={{ x: 95, y: 15 }} color="#8B5CF6" />
-      <BlockchainNode delay={1} position={{ x: 50, y: 5 }} color="#10B981" />
+    <div className="relative space-y-8 p-6 lg:p-8 bg-background min-h-screen max-w-6xl mx-auto">
 
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="relative z-10 flex items-center gap-4 mb-6"
+        transition={{ duration: 0.35 }}
+        className="relative z-10 flex items-center justify-between gap-4 mb-6"
       >
-        <motion.div
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center shadow-2xl"
-        >
-          <AnimatedCart size={32} />
-        </motion.div>
-        <div>
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            🛍️ Ecommerce Marketplace
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-semibold text-foreground tracking-tight">
+            Marketplace
           </h1>
-          <p className="text-gray-300 mt-2 text-lg font-medium">Browse amazing products & track your orders</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Browse products and track your orders.
+          </p>
+        </div>
+        <div className="hidden sm:flex items-center justify-center h-10 w-10 rounded-lg bg-muted">
+          <AnimatedCart size={20} />
         </div>
       </motion.div>
 
       <div className="relative z-10">
         <motion.h2
-          initial={{ opacity: 0, x: -20 }}
+          initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.2 }}
-          className="text-3xl font-bold mb-8 text-blue-300 flex items-center gap-3"
+          transition={{ delay: 0.1, duration: 0.35 }}
+          className="text-lg font-semibold mb-4 text-foreground"
         >
-          <span className="text-4xl">🛒</span>
-          <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            Featured Products
-          </span>
+          Featured products
         </motion.h2>
         {products && products.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -178,79 +169,53 @@ export function ConsumerDashboard() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Card className="shadow-2xl border-2 border-blue-500/30 bg-gradient-to-br from-slate-800/90 via-slate-700/50 to-slate-800/90 backdrop-blur-sm overflow-hidden group cursor-pointer h-full flex flex-col">
-                    {/* Product Image with 3D Effect */}
-                    {product.imageUri && product.imageUri.trim() !== '' ? (
-                      <div className="relative w-full h-40 flex-shrink-0 bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                  <Card className="overflow-hidden group cursor-pointer h-full flex flex-col border border-border/60 bg-card/60">
+                    {/* Product Media: 1:1 */}
+                    <div className="relative w-full aspect-square overflow-hidden">
+                      {product.imageUri && product.imageUri.trim() !== '' ? (
                         <img
                           src={product.imageUri}
                           alt={product.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           onError={(e) => {
                             e.target.style.display = 'none';
                             e.target.nextSibling.style.display = 'flex';
                           }}
                         />
-                        <div className="hidden absolute inset-0 items-center justify-center bg-gradient-to-br from-blue-200 via-purple-200 to-pink-200">
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                          >
-                            <svg className="w-20 h-20 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </motion.div>
-                        </div>
+                      ) : null}
+                      <div className="absolute inset-0 hidden items-center justify-center bg-muted/20 text-muted-foreground group-[&>img[style*='display: none']]:flex">
+                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                       </div>
-                    ) : (
-                      <div className="w-full h-40 flex-shrink-0 bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 flex items-center justify-center relative">
-                        <motion.div
-                          animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-                          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                        >
-                          <svg className="w-20 h-20 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </motion.div>
-                      </div>
-                    )}
-                    <CardHeader className="bg-gradient-to-r from-blue-900/30 via-purple-900/30 to-pink-900/30 border-b border-blue-500/20 p-3 flex-shrink-0">
-                      <CardTitle className="text-lg font-bold bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent line-clamp-1">
-                        {product.name}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3 p-4 bg-slate-800/30 flex-grow flex flex-col">
-                      <p className="text-sm text-gray-300 leading-relaxed line-clamp-2 flex-shrink-0" style={{ minHeight: '40px' }}>{product.description}</p>
-                      <div className="flex items-center justify-between pt-4 border-t-2 border-blue-500/20 mt-auto">
-                        <div>
-                          <div className="text-xs text-gray-400 mb-1">Price</div>
-                          <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-                            {formatUnits(product.price, 18)} ETH
-                          </span>
-                        </div>
-                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-background/70 via-background/20 to-transparent flex items-end p-3">
+                        <div className="ml-auto">
                           <Button
                             size="sm"
                             onClick={() => handlePlaceOrder(product.productId, product.price, product.name)}
                             disabled={isPending || isConfirming}
-                            className="shadow-xl hover:shadow-2xl gradient-primary text-white font-bold px-4 py-2 rounded-xl"
+                            className="rounded-full h-9 px-4 bg-primary hover:bg-secondary text-primary-foreground"
                           >
-                            {isPending || isConfirming ? (
-                              <>
-                                <motion.div
-                                  animate={{ rotate: 360 }}
-                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                  className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                                />
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                🛒 Buy Now
-                              </>
-                            )}
+                            {isPending || isConfirming ? 'Processing…' : 'Buy Now'}
                           </Button>
-                        </motion.div>
+                        </div>
+                      </div>
+                    </div>
+                    <CardHeader className="border-b border-border/60 p-3 flex-shrink-0 bg-background/20">
+                      <CardTitle className="text-base font-semibold text-foreground line-clamp-1">
+                        {product.name}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 p-4 bg-background/10 flex-grow flex flex-col">
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 flex-shrink-0" style={{ minHeight: '40px' }}>{product.description}</p>
+                      <div className="flex items-end justify-between pt-4 border-t border-border/60 mt-auto">
+                        <div>
+                          <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">Price</div>
+                          <span className="text-2xl font-semibold text-price">
+                            {formatUnits(product.price, 18)} ETH
+                          </span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -259,14 +224,14 @@ export function ConsumerDashboard() {
             ))}
           </div>
         ) : (
-          <Card className="shadow-glow border-blue-500/20 bg-slate-800/80 backdrop-blur-sm">
+          <Card className="border border-border/60 bg-card/60 backdrop-blur-sm">
             <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-blue-500/20 mx-auto mb-4 flex items-center justify-center">
-                <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 rounded-full bg-muted/30 mx-auto mb-4 flex items-center justify-center">
+                <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                 </svg>
               </div>
-              <p className="text-gray-300 text-lg">No products available in the marketplace.</p>
+              <p className="text-muted-foreground text-lg">No products available in the marketplace.</p>
             </CardContent>
           </Card>
         )}
@@ -278,14 +243,9 @@ export function ConsumerDashboard() {
         transition={{ delay: 0.4 }}
         className="relative z-10"
       >
-        <h2 className="text-3xl font-bold mb-8 text-blue-300 flex items-center gap-3">
-          <span className="text-4xl">📦</span>
-          <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            My Orders
-          </span>
-        </h2>
+        <h2 className="text-2xl font-semibold mb-4 text-foreground">My Orders</h2>
         {orders.length > 0 ? (
-          <Card className="shadow-glow border-blue-500/20 bg-slate-800/80 backdrop-blur-sm">
+          <Card className="border border-border/60 bg-card/60 backdrop-blur-sm">
             <CardContent className="p-0">
               <Table>
                 <TableHeader>

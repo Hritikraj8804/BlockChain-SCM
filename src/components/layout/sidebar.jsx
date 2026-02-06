@@ -11,7 +11,7 @@ const roleIcons = {
 };
 
 const roleLabels = {
-  Owner: 'Owner Dashboard',
+  Owner: 'Professional Dashboard',
   Consumer: 'Consumer Dashboard',
   Manufacturer: 'Manufacturer Dashboard',
   RawMaterialSupplier: 'RMS Dashboard',
@@ -28,23 +28,32 @@ export function Sidebar() {
   const Icon = roleIcons[role] || Package;
 
   return (
-    <div className="w-72 border-r border-blue-500/20 bg-gradient-to-b from-slate-900 via-slate-800/50 to-slate-900 p-6 shadow-lg">
-      <div className="flex items-center gap-3 mb-8 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 shadow-lg">
-        <div className="w-12 h-12 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
-          <Icon className="h-6 w-6 text-white" />
+    <aside className="w-72 shrink-0 rounded-xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 h-[calc(100vh-6.5rem)] sticky top-20">
+      <div className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-background/40">
+        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+          <Icon className="h-5 w-5 text-foreground" />
         </div>
-        <div>
-          <h2 className="text-lg font-bold text-white">{roleLabels[role] || 'Dashboard'}</h2>
-          <p className="text-xs text-blue-100">Welcome back</p>
-        </div>
-      </div>
-      <div className="space-y-3">
-        <div className="p-4 rounded-lg bg-slate-800/60 backdrop-blur-sm border border-blue-500/20 shadow-sm">
-          <div className="text-xs font-medium text-gray-400 mb-1">Current Role</div>
-          <div className="text-sm font-semibold text-blue-300">{role}</div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-foreground truncate">{roleLabels[role] || 'Dashboard'}</div>
+          <div className="text-xs text-muted-foreground truncate">Welcome back</div>
         </div>
       </div>
-    </div>
+
+      <div className="mt-4 space-y-2">
+        <div className="rounded-lg border border-border/60 bg-background/30 px-3 py-2">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Current role</div>
+          <div className="text-sm font-medium text-foreground">{role}</div>
+        </div>
+
+        <div className="rounded-lg border border-border/60 bg-background/30 px-3 py-2">
+          <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Quick tips</div>
+          <ul className="mt-1 text-xs text-muted-foreground space-y-1">
+            <li>Use the tables to track orders and actions.</li>
+            <li>Confirm transactions in your wallet when prompted.</li>
+          </ul>
+        </div>
+      </div>
+    </aside>
   );
 }
 

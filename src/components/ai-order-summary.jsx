@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 function formatTimeDifference(seconds) {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   if (hours > 0) {
     return `${hours} hour${hours > 1 ? 's' : ''}${minutes > 0 ? ` and ${minutes} minute${minutes > 1 ? 's' : ''}` : ''}`;
   }
@@ -21,7 +21,7 @@ function formatTimeDifference(seconds) {
 function parseSummaryToPoints(summaryText) {
   // Remove markdown formatting if present
   let cleaned = summaryText.replace(/\*\*/g, '').replace(/#{1,6}\s*/g, '');
-  
+
   // Try to split by bullet points first (•, -, *, or numbered)
   let points = cleaned
     .split(/\n+/)
@@ -33,18 +33,18 @@ function parseSummaryToPoints(summaryText) {
         .trim();
     })
     .filter(line => line.length > 10 && !line.match(/^(Product Information|Order Tracking History|Please provide|Format your)/i));
-  
+
   // If we got good points, return them
   if (points.length >= 2) {
     return points;
   }
-  
+
   // Otherwise, try splitting by sentences
   const sentences = cleaned
     .split(/[.!?]+/)
     .map(s => s.trim())
     .filter(s => s.length > 15);
-  
+
   // If sentences are too long, try to split by commas or semicolons
   if (sentences.length === 0 || (sentences.length === 1 && sentences[0].length > 150)) {
     const parts = cleaned.split(/[;,]+\s*/).filter(p => p.trim().length > 20);
@@ -52,7 +52,7 @@ function parseSummaryToPoints(summaryText) {
       return parts.map(p => p.trim());
     }
   }
-  
+
   return sentences.length > 0 ? sentences : [cleaned];
 }
 
@@ -62,15 +62,15 @@ function generateNarrative(history) {
   }
 
   const narratives = [];
-  
+
   for (let i = 0; i < history.length; i++) {
     const point = history[i];
     const prevPoint = i > 0 ? history[i - 1] : null;
-    
+
     if (prevPoint) {
       const timeDiff = Number(point.timestamp) - Number(prevPoint.timestamp);
       const timeStr = formatTimeDifference(timeDiff);
-      
+
       let action = '';
       if (point.status.includes('Materials Requested')) {
         action = `Materials were requested from ${point.role} in ${timeStr}.`;
@@ -97,13 +97,13 @@ function generateNarrative(history) {
       } else {
         action = `${point.status} (${timeStr}).`;
       }
-      
+
       narratives.push(action);
     } else {
       narratives.push(`Order was placed by consumer at ${new Date(Number(point.timestamp) * 1000).toLocaleString()}.`);
     }
   }
-  
+
   return narratives.join(' ');
 }
 
@@ -111,7 +111,7 @@ async function generateAISummary(productInfo, trackingHistory) {
   try {
     const trackingDetails = trackingHistory.map((point, index) => {
       const date = new Date(Number(point.timestamp) * 1000).toLocaleString();
-      const timeDiff = index > 0 
+      const timeDiff = index > 0
         ? formatTimeDifference(Number(point.timestamp) - Number(trackingHistory[index - 1].timestamp))
         : 'Initial';
       return `- ${point.status} by ${point.role} at ${date} (Duration: ${timeDiff})`;
@@ -173,19 +173,19 @@ Format your response as bullet points (•) with each point on a new line. Keep 
 
     const data = JSON.parse(responseText);
     console.log('Parsed Gemini Response:', data);
-    
+
     // Try different possible response structures
-    const summaryText = 
+    const summaryText =
       data.candidates?.[0]?.content?.parts?.[0]?.text ||
       data.candidates?.[0]?.content?.text ||
       data.text ||
       data.response?.text;
-    
+
     if (!summaryText) {
       console.error('Unexpected response structure:', data);
       throw new Error('No summary generated from API - unexpected response format');
     }
-    
+
     // Parse the summary into bullet points
     const parsedSummary = parseSummaryToPoints(summaryText.trim());
     return parsedSummary;
@@ -259,7 +259,7 @@ export function AIOrderSummary({ bookingId }) {
 
     setIsGenerating(true);
     setShowAISummary(true);
-    
+
     try {
       const summary = await generateAISummary(product, history);
       setAiSummary(Array.isArray(summary) ? summary : [summary]);
@@ -351,7 +351,7 @@ export function AIOrderSummary({ bookingId }) {
                   repeatType: "reverse",
                 }}
               />
-              
+
               {/* Sparkle effects */}
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {[...Array(6)].map((_, i) => (
@@ -497,7 +497,7 @@ export function AIOrderSummary({ bookingId }) {
             </motion.div>
           )}
         </AnimatePresence>
-        
+
         {/* Return Status Section */}
         {returnRequest && (
           <motion.div
@@ -520,9 +520,9 @@ export function AIOrderSummary({ bookingId }) {
                 <span className="font-medium text-gray-200">Reason:</span>
                 <span className="text-white">
                   {returnRequest.reason === 0 ? 'Defective' :
-                   returnRequest.reason === 1 ? 'Wrong Item' :
-                   returnRequest.reason === 2 ? 'Not As Described' :
-                   returnRequest.reason === 3 ? 'Changed Mind' : 'Other'}
+                    returnRequest.reason === 1 ? 'Wrong Item' :
+                      returnRequest.reason === 2 ? 'Not As Described' :
+                        returnRequest.reason === 3 ? 'Changed Mind' : 'Other'}
                 </span>
               </div>
               {returnRequest.description && (
@@ -533,14 +533,13 @@ export function AIOrderSummary({ bookingId }) {
               )}
               <div className="flex justify-between">
                 <span className="font-medium text-gray-200">Status:</span>
-                <span className={`font-semibold ${
-                  returnRequest.completed ? 'text-green-300' :
-                  returnRequest.approved ? 'text-blue-300' :
-                  'text-orange-300'
-                }`}>
+                <span className={`font-semibold ${returnRequest.completed ? 'text-green-300' :
+                    returnRequest.approved ? 'text-blue-300' :
+                      'text-orange-300'
+                  }`}>
                   {returnRequest.completed ? 'Completed & Refunded' :
-                   returnRequest.approved ? 'Approved - In Transit' :
-                   'Pending Approval'}
+                    returnRequest.approved ? 'Approved - In Transit' :
+                      'Pending Approval'}
                 </span>
               </div>
               {returnRequest.returnDistributor && returnRequest.returnDistributor !== '0x0000000000000000000000000000000000000000' && (

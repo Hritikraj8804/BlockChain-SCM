@@ -1,9 +1,9 @@
+/* SweetAlert2 Custom Styles */
+@import 'sweetalert2/dist/sweetalert2.min.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* SweetAlert2 Custom Styles */
-@import 'sweetalert2/dist/sweetalert2.min.css';
 
 .sweet-popup {
   border-radius: 16px !important;
@@ -13,32 +13,43 @@
 
 @layer base {
   :root {
-    /* Dark theme as default */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 217.2 32.6% 12%;
-    --card-foreground: 210 40% 98%;
-    --popover: 217.2 32.6% 12%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 262 83% 58%;
+    /* Light theme per requirements */
+    /* Page Background: White */
+    --background: 0 0% 100%;
+    /* Main Text: Almost Black (#0F1111) */
+    --foreground: 180 7% 6%;
+    /* Card/Input Background: White */
+    --card: 0 0% 100%;
+    --card-foreground: 180 7% 6%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 180 7% 6%;
+    /* Primary Button: Golden Yellow (#FFD814) */
+    --primary: 49 100% 54%;
+    /* Primary text on yellow buttons should be near-black */
+    --primary-foreground: 180 7% 6%;
+    /* Secondary (Hover): Pale Orange (#F7CA00) */
+    --secondary: 48 100% 49%;
+    --secondary-foreground: 180 7% 6%;
+    /* Muted surfaces (used sparingly on light) */
+    --muted: 0 0% 98%;
+    --muted-foreground: 210 6% 26%;
+    /* Links / Accents: Link Blue (#007185) */
+    --accent: 188 100% 26%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 25%;
-    --input: 217.2 32.6% 20%;
-    --ring: 221 83% 53%;
+    /* Destructive defaults remain */
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    /* Borders: Light Grey (#D5D9D9) */
+    --border: 180 9% 84%;
+    --input: 0 0% 100%;
+    /* Focus ring can use Link Blue */
+    --ring: 188 100% 26%;
     --radius: 0.75rem;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    /* Additional tokens */
+    /* Header Bar: Dark Gunmetal (#232F3E) */
+    --header: 210 28% 19%;
+    /* Price Text: Dark Red (#B12704) */
+    --price: 13 96% 35%;
   }
 }
 
@@ -47,7 +58,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-gradient-to-br from-slate-900 via-blue-900/50 to-purple-900/50 text-foreground;
+    @apply bg-background text-foreground;
     min-height: 100vh;
   }
 }
