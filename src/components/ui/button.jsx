@@ -8,9 +8,9 @@ const Button = React.forwardRef(
         className={cn(
           "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
           {
-            "bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all": variant === "default",
+            "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm": variant === "default",
             "bg-destructive text-destructive-foreground hover:bg-destructive/90": variant === "destructive",
-            "border border-input bg-background hover:bg-accent hover:text-accent-foreground": variant === "outline",
+            "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground": variant === "outline",
             "bg-secondary text-secondary-foreground hover:bg-secondary/80": variant === "secondary",
             "hover:bg-accent hover:text-accent-foreground": variant === "ghost",
             "text-primary underline-offset-4 hover:underline": variant === "link",
