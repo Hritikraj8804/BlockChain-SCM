@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatUnits } from 'viem';
 import { AIOrderSummary } from '@/components/ai-order-summary';
 import { ReturnRequestModal } from '@/components/return-request-modal';
+import { DeliveryConfirmationModal } from '@/components/delivery-confirmation-modal';
 import { showLoading, showSuccess, showError, closeAlert } from '@/lib/sweetalert';
 import { ProductCard3D, AnimatedCart } from '@/components/3d-elements';
 
@@ -16,6 +17,7 @@ export function ConsumerDashboard() {
   const { address } = useAccount();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [returnRequestOrder, setReturnRequestOrder] = useState(null);
+  const [pendingOrderProduct, setPendingOrderProduct] = useState(null); // Product awaiting delivery confirmation
   const queryClient = useQueryClient();
 
   // Get active products
@@ -108,8 +110,17 @@ export function ConsumerDashboard() {
     }
   }, [returnError, isReturnTxError]);
 
-  const handlePlaceOrder = (productId, price, productName) => {
-    showLoading(`Placing order for ${productName}...`, 'Please confirm the transaction in your wallet');
+  // Show delivery confirmation modal before placing order
+  const handleShowDeliveryConfirmation = (product) => {
+    setPendingOrderProduct(product);
+  };
+
+  // Actually place the order after user confirms delivery time
+  const handleConfirmOrder = () => {
+    if (!pendingOrderProduct) return;
+
+    const { productId, price, name } = pendingOrderProduct;
+    showLoading(`Placing order for ${name}...`, 'Please confirm the transaction in your wallet');
     writeContract({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
@@ -117,6 +128,12 @@ export function ConsumerDashboard() {
       args: [BigInt(productId)],
       value: BigInt(price),
     });
+    setPendingOrderProduct(null);
+  };
+
+  // Cancel the pending order
+  const handleCancelOrder = () => {
+    setPendingOrderProduct(null);
   };
 
   const handleRequestReturn = (bookingId, reason, description) => {
@@ -193,7 +210,7 @@ export function ConsumerDashboard() {
                         <div className="ml-auto">
                           <Button
                             size="sm"
-                            onClick={() => handlePlaceOrder(product.productId, product.price, product.name)}
+                            onClick={() => handleShowDeliveryConfirmation(product)}
                             disabled={isPending || isConfirming}
                             className="rounded-full h-9 px-4 bg-primary hover:bg-secondary text-primary-foreground"
                           >
@@ -286,6 +303,15 @@ export function ConsumerDashboard() {
           onRequestReturn={handleRequestReturn}
           onClose={() => setReturnRequestOrder(null)}
           isPending={isReturnPending || isReturnConfirming}
+        />
+      )}
+
+      {pendingOrderProduct && (
+        <DeliveryConfirmationModal
+          product={pendingOrderProduct}
+          onConfirm={handleConfirmOrder}
+          onCancel={handleCancelOrder}
+          isPending={isPending || isConfirming}
         />
       )}
     </div>
