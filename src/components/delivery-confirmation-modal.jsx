@@ -4,12 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { formatUnits } from 'viem';
 
-// Estimated delivery days based on product type/complexity
-// In a real app, this could come from the smart contract or backend
-const ESTIMATED_DELIVERY_DAYS = {
-    default: 7, // Default 7 days for standard products
-    min: 5,
-    max: 10,
+// Get delivery days from localStorage or use default
+const getDeliveryDays = (productName) => {
+    try {
+        const deliveryData = JSON.parse(localStorage.getItem('product_delivery_days') || '{}');
+        const days = deliveryData[productName?.toLowerCase()?.trim()];
+        if (days && days >= 1 && days <= 30) {
+            return days;
+        }
+    } catch (_) { }
+    return 7; // Default 7 days
 };
 
 export function DeliveryConfirmationModal({
@@ -20,8 +24,8 @@ export function DeliveryConfirmationModal({
 }) {
     const [isVisible, setIsVisible] = useState(true);
 
-    // Calculate estimated delivery date
-    const estimatedDays = ESTIMATED_DELIVERY_DAYS.default;
+    // Get estimated delivery days from localStorage (set by manufacturer)
+    const estimatedDays = getDeliveryDays(product?.name);
     const deliveryDate = new Date();
     deliveryDate.setDate(deliveryDate.getDate() + estimatedDays);
 
