@@ -1,6 +1,6 @@
 // Contract ABI and Address
 // Replace CONTRACT_ADDRESS with your deployed contract address
-export const CONTRACT_ADDRESS = "0x4826533B4897376654Bb4d4AD88B7faFD0C98528"; // TODO: Replace with actual address
+export const CONTRACT_ADDRESS = "0xb7278A61aa25c888815aFC32Ad3cC52fF24fE575"; // TODO: Replace with actual address
 
 export const CONTRACT_ABI = [
 	{
@@ -490,6 +490,25 @@ export const CONTRACT_ABI = [
 		"name": "registerAsConsumer",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "isConsumer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
