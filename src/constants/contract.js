@@ -1,6 +1,6 @@
 // Contract ABI and Address
 // Replace CONTRACT_ADDRESS with your deployed contract address
-export const CONTRACT_ADDRESS = "0x0B306BF915C4d645ff596e518fAf3F9669b97016"; // TODO: Replace with actual address
+export const CONTRACT_ADDRESS = "0x4826533B4897376654Bb4d4AD88B7faFD0C98528"; // TODO: Replace with actual address
 
 export const CONTRACT_ABI = [
 	{
@@ -473,6 +473,26 @@ export const CONTRACT_ABI = [
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "consumerCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "registerAsConsumer",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -699,6 +719,19 @@ export const CONTRACT_ABI = [
 	{
 		"inputs": [],
 		"name": "getManufacturerPool",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getConsumerPool",
 		"outputs": [
 			{
 				"internalType": "address[]",

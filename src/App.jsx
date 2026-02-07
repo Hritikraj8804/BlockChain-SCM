@@ -7,14 +7,63 @@ import { ManufacturerDashboard } from '@/components/dashboards/manufacturer-dash
 import { RMSDashboard } from '@/components/dashboards/rms-dashboard';
 import { DistributorDashboard } from '@/components/dashboards/distributor-dashboard';
 import { ConnectWalletLanding } from '@/components/connect-wallet-landing';
-import { useAccount } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { Card, CardContent } from '@/components/ui/card';
+import { useEffect } from 'react';
 
-import { CONTRACT_ADDRESS } from '@/constants/contract';
+import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/constants/contract';
 
 function App() {
   const { role, isLoading, isConnected, isOwner, ownerAddress, ownerError, roleError } = useRole();
   const { address } = useAccount();
+
+  // Check if user is already registered as consumer ON-CHAIN
+  const { data: isAlreadyConsumer, isLoading: isCheckingConsumer } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'isConsumer',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address, // Only run when address exists
+    },
+  });
+
+  // Auto-register consumers when they connect
+  const { writeContract: registerConsumer, data: registerHash, isPending: isRegistering } = useWriteContract();
+  const { isSuccess: isRegistered } = useWaitForTransactionReceipt({ hash: registerHash });
+
+  useEffect(() => {
+    // Auto-register as consumer when wallet connects and role is Consumer
+    // Only register if:
+    // 1. Connected with an address
+    // 2. Role is loaded (not loading)
+    // 3. Consumer check is loaded
+    // 4. NOT already registered on-chain
+    // 5. Role is Consumer (not Owner/MFR/RMS/Dist)
+    // 6. Not the contract owner
+    if (
+      isConnected &&
+      address &&
+      !isLoading &&
+      !isCheckingConsumer &&
+      isAlreadyConsumer === false && // Explicitly check they're NOT registered
+      role === 'Consumer' &&
+      !isOwner
+    ) {
+      console.log('Auto-registering new consumer:', address);
+      registerConsumer({
+        address: CONTRACT_ADDRESS,
+        abi: CONTRACT_ABI,
+        functionName: 'registerAsConsumer',
+      });
+    }
+  }, [isConnected, address, role, isOwner, isLoading, isCheckingConsumer, isAlreadyConsumer, registerConsumer]);
+
+  useEffect(() => {
+    if (isRegistered) {
+      console.log('Consumer auto-registration confirmed!');
+    }
+  }, [isRegistered]);
 
   // Debug logging (remove in production)
   if (process.env.NODE_ENV === 'development') {

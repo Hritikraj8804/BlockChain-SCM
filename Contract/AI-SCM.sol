@@ -86,6 +86,9 @@ contract AISupplyChain {
     uint256 public productCounter;
     uint256 public orderCounter;
     uint256 public returnCounter;
+    uint256 public consumerCount; // Track number of consumers
+    mapping(address => bool) public isConsumer; // Track registered consumers
+    address[] public consumerPool; // Array of consumer addresses for display
     uint256 public returnWindow = 7 days; // Default return window
     
     // Registries
@@ -196,15 +199,33 @@ contract AISupplyChain {
                 manufacturerPool.push(_actor);
                 isManufacturer[_actor] = true;
             }
+        } else if (_role == ActorRole.Consumer) {
+            // Only increment if not already registered as a consumer
+            if (!isConsumer[_actor]) {
+                consumerCount++;
+                isConsumer[_actor] = true;
+                consumerPool.push(_actor);
+            }
         }
         
         emit ActorRegistered(_actor, _role);
     }
 
+    // Allow anyone to self-register as a consumer (called by frontend on wallet connect)
+    function registerAsConsumer() external {
+        // Only register if not already registered as consumer AND not a special role
+        if (!isConsumer[msg.sender] && actorRoles[msg.sender] == ActorRole.Consumer) {
+            consumerCount++;
+            isConsumer[msg.sender] = true;
+            consumerPool.push(msg.sender);
+            emit ActorRegistered(msg.sender, ActorRole.Consumer);
+        }
+    }
+
     function removeActor(address _actor) external onlyOwner {
         ActorRole currentRole = actorRoles[_actor];
-        require(currentRole != ActorRole.Consumer, "User has no privileged role to remove");
-
+        
+        // Allow removing any registered actor (including consumers if they were explicitly registered)
         if (currentRole == ActorRole.Distributor) {
             isDistributor[_actor] = false;
             _removeFromArray(distributorPool, _actor);
@@ -214,6 +235,13 @@ contract AISupplyChain {
         } else if (currentRole == ActorRole.Manufacturer) {
             isManufacturer[_actor] = false;
             _removeFromArray(manufacturerPool, _actor);
+        }
+        
+        // Also check if they were a registered consumer (could be in consumerPool)
+        if (isConsumer[_actor]) {
+            if (consumerCount > 0) consumerCount--;
+            isConsumer[_actor] = false;
+            _removeFromArray(consumerPool, _actor);
         }
 
         delete actorRoles[_actor]; // Resets to default (Consumer)
@@ -282,6 +310,12 @@ contract AISupplyChain {
     
     // Step 1: Consumer places order
     function placeOrder(uint256 _productId) external onlyConsumer payable returns (uint256) {
+        // Auto-register as consumer if not already counted
+        if (!isConsumer[msg.sender]) {
+            consumerCount++;
+            isConsumer[msg.sender] = true;
+        }
+
         Product memory product = products[_productId];
         require(product.isActive, "Product not available");
         require(msg.value >= product.price, "Insufficient payment");
@@ -487,6 +521,11 @@ require(success, "Transfer to manufacturer failed");
     // Get Manufacturer pool
     function getManufacturerPool() external view returns (address[] memory) {
         return manufacturerPool;
+    }
+
+    // Get Consumer pool
+    function getConsumerPool() external view returns (address[] memory) {
+        return consumerPool;
     }
     
     // Get actor role

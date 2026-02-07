@@ -70,6 +70,18 @@ export function OwnerDashboard() {
     functionName: 'returnCounter',
   });
 
+  const { data: consumerCount, refetch: refetchConsumerCount } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'consumerCount',
+  });
+
+  const { data: consumerPool, refetch: refetchConsumerPool } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getConsumerPool',
+  });
+
   const { data: returnWindow, refetch: refetchReturnWindow } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
@@ -117,8 +129,10 @@ export function OwnerDashboard() {
       refetchActiveProducts();
       refetchProductCounter();
       refetchOrderCounter();
+      refetchConsumerCount();
+      refetchConsumerPool();
     }
-  }, [isSuccess, queryClient, refetchDistributorPool, refetchRmsPool, refetchManufacturerPool, refetchActiveProducts, refetchProductCounter, refetchOrderCounter]);
+  }, [isSuccess, queryClient, refetchDistributorPool, refetchRmsPool, refetchManufacturerPool, refetchActiveProducts, refetchProductCounter, refetchOrderCounter, refetchConsumerCount, refetchConsumerPool]);
 
   const handleUpdateReturnWindow = () => {
     if (!returnWindowDays || parseFloat(returnWindowDays) <= 0) {
@@ -302,7 +316,7 @@ export function OwnerDashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="border border-border/60 bg-card/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -333,12 +347,12 @@ export function OwnerDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-primary"></div>
-              Distributors
+              Total Consumers
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{distributorPool?.length || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">In the pool</p>
+            <div className="text-3xl font-semibold text-foreground">{consumerCount?.toString() || '0'}</div>
+            <p className="text-xs text-muted-foreground mt-1">Registered buyers</p>
           </CardContent>
         </Card>
 
@@ -352,6 +366,45 @@ export function OwnerDashboard() {
           <CardContent>
             <div className="text-3xl font-semibold text-foreground">{returnCounter?.toString() || '0'}</div>
             <p className="text-xs text-muted-foreground mt-1">Return requests</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 bg-card/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
+              Manufacturers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold text-foreground">{manufacturerPool?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Registered factories</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 bg-card/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
+              Suppliers (RMS)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold text-foreground">{rmsPool?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Raw material suppliers</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 bg-card/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
+              Distributors
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold text-foreground">{distributorPool?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Logistics partners</p>
           </CardContent>
         </Card>
       </div>
@@ -459,6 +512,25 @@ export function OwnerDashboard() {
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">No RMS active.</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wider">Consumers</h3>
+                {consumerPool && consumerPool.length > 0 ? (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableBody>
+                        {consumerPool.map((address, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-mono text-xs py-2">{address}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No consumers registered.</p>
                 )}
               </div>
             </div>
