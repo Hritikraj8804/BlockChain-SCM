@@ -111,6 +111,10 @@ contract AISupplyChain {
     // RMS Pool for manufacturer selection
     address[] public rmsPool;
     mapping(address => bool) public isRMS;
+
+    // Manufacturer Pool for monitoring
+    address[] public manufacturerPool;
+    mapping(address => bool) public isManufacturer;
     
     // ==================== EVENTS ====================
     
@@ -187,6 +191,11 @@ contract AISupplyChain {
                 rmsPool.push(_actor);
                 isRMS[_actor] = true;
             }
+        } else if (_role == ActorRole.Manufacturer) {
+            if (!isManufacturer[_actor]) {
+                manufacturerPool.push(_actor);
+                isManufacturer[_actor] = true;
+            }
         }
         
         emit ActorRegistered(_actor, _role);
@@ -202,6 +211,9 @@ contract AISupplyChain {
         } else if (currentRole == ActorRole.RawMaterialSupplier) {
             isRMS[_actor] = false;
             _removeFromArray(rmsPool, _actor);
+        } else if (currentRole == ActorRole.Manufacturer) {
+            isManufacturer[_actor] = false;
+            _removeFromArray(manufacturerPool, _actor);
         }
 
         delete actorRoles[_actor]; // Resets to default (Consumer)
@@ -470,6 +482,11 @@ require(success, "Transfer to manufacturer failed");
     // Get RMS pool
     function getRawMaterialSupplierPool() external view returns (address[] memory) {
         return rmsPool;
+    }
+
+    // Get Manufacturer pool
+    function getManufacturerPool() external view returns (address[] memory) {
+        return manufacturerPool;
     }
     
     // Get actor role
