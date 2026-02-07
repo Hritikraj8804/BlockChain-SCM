@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
+import { formatEther } from 'viem';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/constants/contract';
@@ -29,6 +30,27 @@ export function OwnerDashboard() {
     functionName: 'getDistributorPool',
   });
 
+  // Get RMS pool
+  const { data: rmsPool, refetch: refetchRmsPool } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getRawMaterialSupplierPool',
+  });
+
+  // Get Manufacturer Pool
+  const { data: manufacturerPool, refetch: refetchManufacturerPool } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getManufacturerPool',
+  });
+
+  // Get Active Products
+  const { data: activeProducts, refetch: refetchActiveProducts } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getActiveProducts',
+  });
+
   // Get stats
   const { data: productCounter, refetch: refetchProductCounter } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -48,6 +70,18 @@ export function OwnerDashboard() {
     functionName: 'returnCounter',
   });
 
+  const { data: consumerCount, refetch: refetchConsumerCount } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'consumerCount',
+  });
+
+  const { data: consumerPool, refetch: refetchConsumerPool } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getConsumerPool',
+  });
+
   const { data: returnWindow, refetch: refetchReturnWindow } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
@@ -57,6 +91,13 @@ export function OwnerDashboard() {
   const { writeContract: writeUpdateReturnWindow, data: updateWindowHash, isPending: isUpdatingWindow, error: updateWindowError } = useWriteContract();
   const { isLoading: isUpdatingWindowConfirming, isSuccess: isUpdateWindowSuccess, isError: isUpdateWindowTxError } = useWaitForTransactionReceipt({
     hash: updateWindowHash,
+  });
+
+  // Remove Actor state
+  const [removeActorAddress, setRemoveActorAddress] = useState('');
+  const { writeContract: writeRemoveActor, data: removeHash, isPending: isRemoving, error: removeError } = useWriteContract();
+  const { isLoading: isConfirmingRemoval, isSuccess: isRemoveSuccess, isError: isRemoveTxError } = useWaitForTransactionReceipt({
+    hash: removeHash,
   });
 
   // Get all orders (owner can view all)
@@ -83,10 +124,15 @@ export function OwnerDashboard() {
       // Invalidate and refetch all relevant queries
       queryClient.invalidateQueries();
       refetchDistributorPool();
+      refetchRmsPool();
+      refetchManufacturerPool();
+      refetchActiveProducts();
       refetchProductCounter();
       refetchOrderCounter();
+      refetchConsumerCount();
+      refetchConsumerPool();
     }
-  }, [isSuccess, queryClient, refetchDistributorPool, refetchProductCounter, refetchOrderCounter]);
+  }, [isSuccess, queryClient, refetchDistributorPool, refetchRmsPool, refetchManufacturerPool, refetchActiveProducts, refetchProductCounter, refetchOrderCounter, refetchConsumerCount, refetchConsumerPool]);
 
   const handleUpdateReturnWindow = () => {
     if (!returnWindowDays || parseFloat(returnWindowDays) <= 0) {
@@ -129,6 +175,48 @@ export function OwnerDashboard() {
       toast.error(updateWindowError?.message || 'Failed to update return window', { id: 'update-window' });
     }
   }, [updateWindowError, isUpdateWindowTxError]);
+
+  // Remove Actor Effects
+  useEffect(() => {
+    if (isRemoving) toast.loading('Removing actor...', { id: 'remove-actor' });
+  }, [isRemoving]);
+
+  useEffect(() => {
+    if (isConfirmingRemoval) toast.loading('Waiting for confirmation...', { id: 'remove-actor' });
+  }, [isConfirmingRemoval]);
+
+  useEffect(() => {
+    if (isRemoveSuccess) {
+      toast.success('Actor removed successfully!', { id: 'remove-actor' });
+      setRemoveActorAddress('');
+      queryClient.invalidateQueries();
+      refetchDistributorPool();
+      refetchRmsPool();
+      refetchManufacturerPool();
+    }
+  }, [isRemoveSuccess, queryClient, refetchDistributorPool, refetchRmsPool, refetchManufacturerPool]);
+
+  useEffect(() => {
+    if (removeError || isRemoveTxError) {
+      toast.error(removeError?.message || 'Failed to remove actor', { id: 'remove-actor' });
+    }
+  }, [removeError, isRemoveTxError]);
+
+  const handleRemoveActor = () => {
+    if (!removeActorAddress) {
+      toast.error('Please enter an actor address');
+      return;
+    }
+
+    toast.loading(`Removing actor ${removeActorAddress.slice(0, 6)}...`, { id: 'remove-actor' });
+
+    writeRemoveActor({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'removeActor',
+      args: [removeActorAddress],
+    });
+  };
 
   const handleRegister = () => {
     if (!actorAddress) {
@@ -200,7 +288,35 @@ export function OwnerDashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+            </svg>
+            Remove Actor
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Actor Address to Remove</label>
+            <Input
+              placeholder="0x..."
+              value={removeActorAddress}
+              onChange={(e) => setRemoveActorAddress(e.target.value)}
+            />
+          </div>
+          <Button
+            onClick={handleRemoveActor}
+            variant="destructive"
+            disabled={isRemoving || isConfirmingRemoval || !removeActorAddress}
+          >
+            {isRemoving || isConfirmingRemoval ? 'Removing...' : 'Remove Actor'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="border border-border/60 bg-card/50">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -231,12 +347,12 @@ export function OwnerDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-primary"></div>
-              Distributors
+              Total Consumers
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-semibold text-foreground">{distributorPool?.length || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">In the pool</p>
+            <div className="text-3xl font-semibold text-foreground">{consumerCount?.toString() || '0'}</div>
+            <p className="text-xs text-muted-foreground mt-1">Registered buyers</p>
           </CardContent>
         </Card>
 
@@ -250,6 +366,45 @@ export function OwnerDashboard() {
           <CardContent>
             <div className="text-3xl font-semibold text-foreground">{returnCounter?.toString() || '0'}</div>
             <p className="text-xs text-muted-foreground mt-1">Return requests</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 bg-card/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
+              Manufacturers
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold text-foreground">{manufacturerPool?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Registered factories</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 bg-card/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
+              Suppliers (RMS)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold text-foreground">{rmsPool?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Raw material suppliers</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-border/60 bg-card/50">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary"></div>
+              Distributors
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-semibold text-foreground">{distributorPool?.length || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">Logistics partners</p>
           </CardContent>
         </Card>
       </div>
@@ -289,40 +444,138 @@ export function OwnerDashboard() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="border-b border-border/60 bg-card/30">
-          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            Distributor Pool
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {distributorPool && distributorPool.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Index</TableHead>
-                  <TableHead>Address</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {distributorPool.map((address, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{index}</TableCell>
-                    <TableCell className="font-mono text-sm">{address}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center text-muted-foreground py-4">
-              No distributors registered yet.
+
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="h-full">
+          <CardHeader className="border-b border-border/60 bg-card/30">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              Network Directory
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="p-4 space-y-6">
+              <div>
+                <h3 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wider">Manufacturers</h3>
+                {manufacturerPool && manufacturerPool.length > 0 ? (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableBody>
+                        {manufacturerPool.map((address, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-mono text-xs py-2">{address}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No manufacturers active.</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wider">Distributors</h3>
+                {distributorPool && distributorPool.length > 0 ? (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableBody>
+                        {distributorPool.map((address, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-mono text-xs py-2">{address}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No distributors active.</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wider">Raw Material Suppliers</h3>
+                {rmsPool && rmsPool.length > 0 ? (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableBody>
+                        {rmsPool.map((address, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-mono text-xs py-2">{address}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No RMS active.</p>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wider">Consumers</h3>
+                {consumerPool && consumerPool.length > 0 ? (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableBody>
+                        {consumerPool.map((address, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-mono text-xs py-2">{address}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No consumers registered.</p>
+                )}
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        <Card className="h-full">
+          <CardHeader className="border-b border-border/60 bg-card/30">
+            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+              <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              Product Inventory
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {activeProducts && activeProducts.length > 0 ? (
+              <div className="max-h-[400px] overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="text-right">Price</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activeProducts.map((product) => (
+                      <TableRow key={product.productId.toString()}>
+                        <TableCell className="font-mono">#{product.productId.toString()}</TableCell>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell className="text-right">{formatEther(product.price)} ETH</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-muted-foreground">
+                Inventory empty.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader className="border-b border-border/60 bg-card/30">
@@ -338,8 +591,12 @@ export function OwnerDashboard() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Order ID</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Product</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Value</TableHead>
+                  <TableHead className="text-center">Track</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -361,38 +618,87 @@ export function OwnerDashboard() {
         </CardContent>
       </Card>
 
-      {selectedOrder && (
-        <AIOrderSummary bookingId={selectedOrder} />
-      )}
-    </div>
+      {
+        selectedOrder && (
+          <AIOrderSummary bookingId={selectedOrder} />
+        )
+      }
+    </div >
   );
 }
 
 function OrderRow({ bookingId, onTrack, isSelected }) {
+  const { data: order } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getOrder',
+    args: [bookingId],
+  });
+
+  const { data: product } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getProduct',
+    args: [order?.productId],
+    query: {
+      enabled: !!order,
+    },
+  });
+
+  const getStatusBadge = (status) => {
+    const statusMap = [
+      { label: 'Pending', color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
+      { label: 'Materials Req.', color: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
+      { label: 'Materials Sent', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
+      { label: 'Production', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
+      { label: 'Ready to Ship', color: 'bg-indigo-500/10 text-indigo-500 border-indigo-500/20' },
+      { label: 'In Transit', color: 'bg-purple-500/10 text-purple-500 border-purple-500/20' },
+      { label: 'Delivered', color: 'bg-green-500/10 text-green-500 border-green-500/20' },
+      { label: 'Return Req.', color: 'bg-red-500/10 text-red-500 border-red-500/20' },
+      { label: 'Return Transit', color: 'bg-rose-500/10 text-rose-500 border-rose-500/20' },
+      { label: 'Return Recv.', color: 'bg-pink-500/10 text-pink-500 border-pink-500/20' },
+      { label: 'Refunded', color: 'bg-slate-500/10 text-slate-500 border-slate-500/20' },
+    ];
+
+    const s = statusMap[status] || { label: 'Unknown', color: 'bg-gray-500/10 text-gray-500' };
+    return (
+      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.color}`}>
+        {s.label}
+      </span>
+    );
+  };
+
+  if (!order) return <TableRow><TableCell colSpan={6} className="h-12 text-center text-muted-foreground animate-pulse">Loading...</TableCell></TableRow>;
+
   return (
-    <TableRow>
-      <TableCell className="font-mono">#{bookingId.toString()}</TableCell>
+    <TableRow className="hover:bg-accent/5">
+      <TableCell className="font-mono font-medium">#{bookingId.toString()}</TableCell>
       <TableCell>
+        <div className="flex flex-col">
+          <span className="font-medium">{product?.name || 'Loading...'}</span>
+          <span className="text-xs text-muted-foreground truncate max-w-[100px]">ID: {order.productId.toString()}</span>
+        </div>
+      </TableCell>
+      <TableCell>
+        <div className="font-mono text-xs text-muted-foreground truncate max-w-[120px]" title={order.consumer}>{order.consumer}</div>
+      </TableCell>
+      <TableCell>{getStatusBadge(order.status)}</TableCell>
+      <TableCell className="text-right font-medium">{order ? formatEther(order.pricePaid) : '0'} ETH</TableCell>
+      <TableCell className="text-center">
         <Button
           size="sm"
-          variant="outline"
-          onClick={() => onTrack()}
-          className="shadow-sm hover:shadow-md"
+          variant={isSelected ? "secondary" : "ghost"}
+          onClick={onTrack}
+          className="h-8 w-8 p-0 rounded-full"
         >
           {isSelected ? (
-            <>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Hide Tracking
-            </>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
           ) : (
-            <>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-              </svg>
-              Track Order
-            </>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           )}
         </Button>
       </TableCell>

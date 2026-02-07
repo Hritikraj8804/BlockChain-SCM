@@ -1,6 +1,6 @@
 // Contract ABI and Address
 // Replace CONTRACT_ADDRESS with your deployed contract address
-export const CONTRACT_ADDRESS = "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c"; // TODO: Replace with actual address
+export const CONTRACT_ADDRESS = "0xFD471836031dc5108809D173A067e8486B9047A3"; // TODO: Replace with actual address
 
 export const CONTRACT_ABI = [
 	{
@@ -25,6 +25,44 @@ export const CONTRACT_ABI = [
 			}
 		],
 		"name": "ActorRegistered",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "actor",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum AISupplyChain.ActorRole",
+				"name": "role",
+				"type": "uint8"
+			}
+		],
+		"name": "ActorRemoved",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "actor",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum AISupplyChain.ActorRole",
+				"name": "role",
+				"type": "uint8"
+			}
+		],
+		"name": "ActorRemoved",
 		"type": "event"
 	},
 	{
@@ -435,6 +473,45 @@ export const CONTRACT_ABI = [
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "consumerCount",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "registerAsConsumer",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "isConsumer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -648,6 +725,32 @@ export const CONTRACT_ABI = [
 	{
 		"inputs": [],
 		"name": "getRawMaterialSupplierPool",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getManufacturerPool",
+		"outputs": [
+			{
+				"internalType": "address[]",
+				"name": "",
+				"type": "address[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getConsumerPool",
 		"outputs": [
 			{
 				"internalType": "address[]",
@@ -1605,6 +1708,19 @@ export const CONTRACT_ABI = [
 			}
 		],
 		"name": "updateProduct",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_actor",
+				"type": "address"
+			}
+		],
+		"name": "removeActor",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"

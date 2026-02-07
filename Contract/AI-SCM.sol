@@ -1,7 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.4;
 
 contract AISupplyChain {
+    // ==================== CUSTOM ERRORS (saves bytecode) ====================
+    error Unauthorized();
+    error InvalidOrder();
+    error InvalidStatus();
+    error InvalidProduct();
+    error InvalidRole();
+    error InsufficientFunds();
+    error AlreadyExists();
+    error NotFound();
+    error InvalidWindow();
     
     // ==================== ENUMS & STRUCTS ====================
     
@@ -86,6 +96,9 @@ contract AISupplyChain {
     uint256 public productCounter;
     uint256 public orderCounter;
     uint256 public returnCounter;
+    uint256 public consumerCount; // Track number of consumers
+    mapping(address => bool) public isConsumer; // Track registered consumers
+    address[] public consumerPool; // Array of consumer addresses for display
     uint256 public returnWindow = 7 days; // Default return window
     
     // Registries
@@ -111,10 +124,15 @@ contract AISupplyChain {
     // RMS Pool for manufacturer selection
     address[] public rmsPool;
     mapping(address => bool) public isRMS;
+
+    // Manufacturer Pool for monitoring
+    address[] public manufacturerPool;
+    mapping(address => bool) public isManufacturer;
     
     // ==================== EVENTS ====================
     
     event ActorRegistered(address indexed actor, ActorRole role);
+    event ActorRemoved(address indexed actor, ActorRole role);
     event ProductListed(uint256 indexed productId, address indexed manufacturer, string name);
     event ProductUpdated(uint256 indexed productId, string name, uint256 price);
     event OrderPlaced(uint256 indexed bookingId, uint256 indexed productId, address indexed consumer);
@@ -136,32 +154,32 @@ contract AISupplyChain {
     // ==================== MODIFIERS ====================
     
     modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this");
+        if (msg.sender != owner) revert Unauthorized();
         _;
     }
     
     modifier onlyManufacturer() {
-        require(actorRoles[msg.sender] == ActorRole.Manufacturer, "Only manufacturers allowed");
+        if (actorRoles[msg.sender] != ActorRole.Manufacturer) revert Unauthorized();
         _;
     }
     
     modifier onlyConsumer() {
-        require(actorRoles[msg.sender] == ActorRole.Consumer, "Only consumers allowed");
+        if (actorRoles[msg.sender] != ActorRole.Consumer) revert Unauthorized();
         _;
     }
     
     modifier onlyRMS() {
-        require(actorRoles[msg.sender] == ActorRole.RawMaterialSupplier, "Only RMS allowed");
+        if (actorRoles[msg.sender] != ActorRole.RawMaterialSupplier) revert Unauthorized();
         _;
     }
     
     modifier onlyDistributor() {
-        require(actorRoles[msg.sender] == ActorRole.Distributor, "Only distributors allowed");
+        if (actorRoles[msg.sender] != ActorRole.Distributor) revert Unauthorized();
         _;
     }
     
     modifier orderExists(uint256 _bookingId) {
-        require(orders[_bookingId].exists, "Order does not exist");
+        if (!orders[_bookingId].exists) revert InvalidOrder();
         _;
     }
     
@@ -186,9 +204,68 @@ contract AISupplyChain {
                 rmsPool.push(_actor);
                 isRMS[_actor] = true;
             }
+        } else if (_role == ActorRole.Manufacturer) {
+            if (!isManufacturer[_actor]) {
+                manufacturerPool.push(_actor);
+                isManufacturer[_actor] = true;
+            }
+        } else if (_role == ActorRole.Consumer) {
+            // Only increment if not already registered as a consumer
+            if (!isConsumer[_actor]) {
+                consumerCount++;
+                isConsumer[_actor] = true;
+                consumerPool.push(_actor);
+            }
         }
         
         emit ActorRegistered(_actor, _role);
+    }
+
+    // Allow anyone to self-register as a consumer (called by frontend on wallet connect)
+    function registerAsConsumer() external {
+        // Only register if not already registered as consumer AND not a special role
+        if (!isConsumer[msg.sender] && actorRoles[msg.sender] == ActorRole.Consumer) {
+            consumerCount++;
+            isConsumer[msg.sender] = true;
+            consumerPool.push(msg.sender);
+            emit ActorRegistered(msg.sender, ActorRole.Consumer);
+        }
+    }
+
+    function removeActor(address _actor) external onlyOwner {
+        ActorRole currentRole = actorRoles[_actor];
+        
+        // Allow removing any registered actor (including consumers if they were explicitly registered)
+        if (currentRole == ActorRole.Distributor) {
+            isDistributor[_actor] = false;
+            _removeFromArray(distributorPool, _actor);
+        } else if (currentRole == ActorRole.RawMaterialSupplier) {
+            isRMS[_actor] = false;
+            _removeFromArray(rmsPool, _actor);
+        } else if (currentRole == ActorRole.Manufacturer) {
+            isManufacturer[_actor] = false;
+            _removeFromArray(manufacturerPool, _actor);
+        }
+        
+        // Also check if they were a registered consumer (could be in consumerPool)
+        if (isConsumer[_actor]) {
+            if (consumerCount > 0) consumerCount--;
+            isConsumer[_actor] = false;
+            _removeFromArray(consumerPool, _actor);
+        }
+
+        delete actorRoles[_actor]; // Resets to default (Consumer)
+        emit ActorRemoved(_actor, currentRole);
+    }
+
+    function _removeFromArray(address[] storage _array, address _item) private {
+        for (uint256 i = 0; i < _array.length; i++) {
+            if (_array[i] == _item) {
+                _array[i] = _array[_array.length - 1];
+                _array.pop();
+                break;
+            }
+        }
     }
     
     // ==================== PRODUCT MANAGEMENT ====================
@@ -216,7 +293,7 @@ contract AISupplyChain {
     }
     
     function deactivateProduct(uint256 _productId) external {
-        require(products[_productId].manufacturer == msg.sender, "Not your product");
+        if (products[_productId].manufacturer != msg.sender) revert Unauthorized();
         products[_productId].isActive = false;
     }
 
@@ -227,8 +304,8 @@ contract AISupplyChain {
         string memory _description,
         uint256 _price
     ) external {
-        require(products[_productId].manufacturer == msg.sender, "Not your product");
-        require(products[_productId].isActive, "Product is not active");
+        if (products[_productId].manufacturer != msg.sender) revert Unauthorized();
+        if (!products[_productId].isActive) revert InvalidProduct();
 
         Product storage product = products[_productId];
         product.name = _name;
@@ -243,9 +320,15 @@ contract AISupplyChain {
     
     // Step 1: Consumer places order
     function placeOrder(uint256 _productId) external onlyConsumer payable returns (uint256) {
+        // Auto-register as consumer if not already counted
+        if (!isConsumer[msg.sender]) {
+            consumerCount++;
+            isConsumer[msg.sender] = true;
+        }
+
         Product memory product = products[_productId];
-        require(product.isActive, "Product not available");
-        require(msg.value >= product.price, "Insufficient payment");
+        if (!product.isActive) revert InvalidProduct();
+        if (msg.value < product.price) revert InsufficientFunds();
         
         orderCounter++;
         uint256 bookingId = orderCounter;
@@ -281,9 +364,9 @@ contract AISupplyChain {
         orderExists(_bookingId) 
     {
         Order storage order = orders[_bookingId];
-        require(order.manufacturer == msg.sender, "Not your order");
-        require(order.status == OrderStatus.Pending, "Invalid status");
-        require(actorRoles[_rmsAddress] == ActorRole.RawMaterialSupplier, "Invalid RMS address");
+        if (order.manufacturer != msg.sender) revert Unauthorized();
+        if (order.status != OrderStatus.Pending) revert InvalidStatus();
+        if (actorRoles[_rmsAddress] != ActorRole.RawMaterialSupplier) revert InvalidRole();
         
         order.rmsAssigned = _rmsAddress;
         order.status = OrderStatus.MaterialsRequested;
@@ -303,8 +386,8 @@ contract AISupplyChain {
         orderExists(_bookingId) 
     {
         Order storage order = orders[_bookingId];
-        require(order.rmsAssigned == msg.sender, "Not assigned to you");
-        require(order.status == OrderStatus.MaterialsRequested, "Invalid status");
+        if (order.rmsAssigned != msg.sender) revert Unauthorized();
+        if (order.status != OrderStatus.MaterialsRequested) revert InvalidStatus();
         
         order.status = OrderStatus.MaterialsDispatched;
         
@@ -320,9 +403,9 @@ contract AISupplyChain {
         orderExists(_bookingId) 
     {
         Order storage order = orders[_bookingId];
-        require(order.manufacturer == msg.sender, "Not your order");
-        require(order.status == OrderStatus.MaterialsDispatched, "Invalid status");
-        require(distributorPool.length > 0, "No distributors available");
+        if (order.manufacturer != msg.sender) revert Unauthorized();
+        if (order.status != OrderStatus.MaterialsDispatched) revert InvalidStatus();
+        if (distributorPool.length == 0) revert NotFound();
         
         // Mark production complete
         order.status = OrderStatus.ReadyForShipping;
@@ -353,8 +436,8 @@ contract AISupplyChain {
         orderExists(_bookingId) 
     {
         Order storage order = orders[_bookingId];
-        require(order.distributorAssigned == msg.sender, "Not assigned to you");
-        require(order.status == OrderStatus.InTransit, "Invalid status");
+        if (order.distributorAssigned != msg.sender) revert Unauthorized();
+        if (order.status != OrderStatus.InTransit) revert InvalidStatus();
         
         order.status = OrderStatus.Delivered;
         
@@ -362,7 +445,7 @@ contract AISupplyChain {
         
         // Transfer payment to manufacturer
         (bool success, ) = payable(order.manufacturer).call{value: products[order.productId].price}("");
-require(success, "Transfer to manufacturer failed");
+        if (!success) revert InsufficientFunds();
         
         emit OrderDelivered(_bookingId, msg.sender);
     }
@@ -444,6 +527,16 @@ require(success, "Transfer to manufacturer failed");
     function getRawMaterialSupplierPool() external view returns (address[] memory) {
         return rmsPool;
     }
+
+    // Get Manufacturer pool
+    function getManufacturerPool() external view returns (address[] memory) {
+        return manufacturerPool;
+    }
+
+    // Get Consumer pool
+    function getConsumerPool() external view returns (address[] memory) {
+        return consumerPool;
+    }
     
     // Get actor role
     function getActorRole(address _actor) external view returns (ActorRole) {
@@ -460,8 +553,8 @@ require(success, "Transfer to manufacturer failed");
         returns (uint256) 
     {
         TrackingPoint[] memory history = orderHistory[_bookingId];
-        require(_stepIndex2 < history.length && _stepIndex1 < history.length, "Invalid indices");
-        require(_stepIndex2 > _stepIndex1, "Step 2 must be after Step 1");
+        if (_stepIndex2 >= history.length || _stepIndex1 >= history.length) revert InvalidOrder();
+        if (_stepIndex2 <= _stepIndex1) revert InvalidOrder();
         
         return history[_stepIndex2].timestamp - history[_stepIndex1].timestamp;
     }
@@ -489,13 +582,10 @@ require(success, "Transfer to manufacturer failed");
     ) external orderExists(_bookingId) returns (uint256) {
         Order storage order = orders[_bookingId];
         
-        require(order.consumer == msg.sender, "Not your order");
-        require(order.status == OrderStatus.Delivered, "Order not delivered yet");
-        require(!hasActiveReturn[_bookingId], "Return already requested for this order");
-        require(
-            block.timestamp <= order.createdAt + returnWindow,
-            "Return window expired"
-        );
+        if (order.consumer != msg.sender) revert Unauthorized();
+        if (order.status != OrderStatus.Delivered) revert InvalidStatus();
+        if (hasActiveReturn[_bookingId]) revert AlreadyExists();
+        if (block.timestamp > order.createdAt + returnWindow) revert InvalidWindow();
         
         returnCounter++;
         uint256 returnId = returnCounter;
@@ -536,18 +626,18 @@ require(success, "Transfer to manufacturer failed");
         ReturnRequest storage returnReq = returnRequests[_returnId];
         Order storage order = orders[returnReq.bookingId];
         
-        require(returnReq.bookingId > 0, "Return does not exist");
-        require(order.manufacturer == msg.sender, "Not your order");
-        require(!returnReq.approved, "Return already processed");
-        require(order.status == OrderStatus.ReturnRequested, "Invalid order status");
-        require(msg.value >= order.pricePaid, "Must deposit refund amount");
+        if (returnReq.bookingId == 0) revert NotFound();
+        if (order.manufacturer != msg.sender) revert Unauthorized();
+        if (returnReq.approved) revert AlreadyExists();
+        if (order.status != OrderStatus.ReturnRequested) revert InvalidStatus();
+        if (msg.value < order.pricePaid) revert InsufficientFunds();
         
         returnReq.approved = true;
         returnReq.refundAmount = msg.value;       // Store the deposited refund
         returnReq.refundDeposited = true;         // Mark refund as deposited
         
         // Randomly assign a distributor for return pickup
-        require(distributorPool.length > 0, "No distributors available");
+        if (distributorPool.length == 0) revert NotFound();
         uint256 randomIndex = uint256(
             keccak256(abi.encodePacked(block.timestamp, msg.sender, returnReq.returnId))
         ) % distributorPool.length;
@@ -581,10 +671,10 @@ require(success, "Transfer to manufacturer failed");
         ReturnRequest storage returnReq = returnRequests[_returnId];
         Order storage order = orders[returnReq.bookingId];
         
-        require(returnReq.bookingId > 0, "Return does not exist");
-        require(order.manufacturer == msg.sender, "Not your order");
-        require(!returnReq.approved, "Return already approved");
-        require(order.status == OrderStatus.ReturnRequested, "Invalid order status");
+        if (returnReq.bookingId == 0) revert NotFound();
+        if (order.manufacturer != msg.sender) revert Unauthorized();
+        if (returnReq.approved) revert AlreadyExists();
+        if (order.status != OrderStatus.ReturnRequested) revert InvalidStatus();
         
         // Reset order status back to delivered
         order.status = OrderStatus.Delivered;
@@ -605,11 +695,11 @@ require(success, "Transfer to manufacturer failed");
         ReturnRequest storage returnReq = returnRequests[_returnId];
         Order storage order = orders[returnReq.bookingId];
         
-        require(returnReq.bookingId > 0, "Return does not exist");
-        require(returnReq.approved, "Return not approved yet");
-        require(!returnReq.pickedUp, "Return already picked up");
-        require(returnReq.returnDistributor == msg.sender, "Not assigned to you");
-        require(order.status == OrderStatus.ReturnInTransit, "Invalid order status");
+        if (returnReq.bookingId == 0) revert NotFound();
+        if (!returnReq.approved) revert InvalidStatus();
+        if (returnReq.pickedUp) revert AlreadyExists();
+        if (returnReq.returnDistributor != msg.sender) revert Unauthorized();
+        if (order.status != OrderStatus.ReturnInTransit) revert InvalidStatus();
         
         returnReq.pickedUp = true;  // Mark as picked up
         
@@ -628,13 +718,13 @@ require(success, "Transfer to manufacturer failed");
         ReturnRequest storage returnReq = returnRequests[_returnId];
         Order storage order = orders[returnReq.bookingId];
         
-        require(returnReq.bookingId > 0, "Return does not exist");
-        require(returnReq.approved, "Return not approved");
-        require(returnReq.pickedUp, "Return not picked up by distributor yet");
-        require(returnReq.refundDeposited, "Refund not deposited");
-        require(order.manufacturer == msg.sender, "Not your order");
-        require(order.status == OrderStatus.ReturnInTransit, "Invalid order status");
-        require(!returnReq.completed, "Return already completed");
+        if (returnReq.bookingId == 0) revert NotFound();
+        if (!returnReq.approved) revert InvalidStatus();
+        if (!returnReq.pickedUp) revert InvalidStatus();
+        if (!returnReq.refundDeposited) revert InvalidStatus();
+        if (order.manufacturer != msg.sender) revert Unauthorized();
+        if (order.status != OrderStatus.ReturnInTransit) revert InvalidStatus();
+        if (returnReq.completed) revert AlreadyExists();
         
         returnReq.completed = true;
         order.status = OrderStatus.ReturnReceived;
@@ -650,7 +740,7 @@ require(success, "Transfer to manufacturer failed");
         uint256 refundAmount = returnReq.refundAmount;
         returnReq.refundProcessed = true;
         (bool success, ) = payable(order.consumer).call{value: refundAmount}("");
-        require(success, "Refund to consumer failed");
+        if (!success) revert InsufficientFunds();
         
         order.status = OrderStatus.Refunded;
         
@@ -669,14 +759,14 @@ require(success, "Transfer to manufacturer failed");
     
     // Get return details
     function getReturn(uint256 _returnId) external view returns (ReturnRequest memory) {
-        require(returnRequests[_returnId].bookingId > 0, "Return does not exist");
+        if (returnRequests[_returnId].bookingId == 0) revert NotFound();
         return returnRequests[_returnId];
     }
     
     // Get return by booking ID
     function getReturnByBookingId(uint256 _bookingId) external view orderExists(_bookingId) returns (ReturnRequest memory) {
         uint256 returnId = orderToReturn[_bookingId];
-        require(returnId > 0, "No return for this order");
+        if (returnId == 0) revert NotFound();
         return returnRequests[returnId];
     }
     
@@ -702,7 +792,7 @@ require(success, "Transfer to manufacturer failed");
     
     // Admin: Update return window (only owner)
     function updateReturnWindow(uint256 _newWindow) external onlyOwner {
-        require(_newWindow > 0, "Invalid return window");
+        if (_newWindow == 0) revert InvalidWindow();
         returnWindow = _newWindow;
     }
     
