@@ -59,6 +59,13 @@ export function OwnerDashboard() {
     hash: updateWindowHash,
   });
 
+  // Remove Actor state
+  const [removeActorAddress, setRemoveActorAddress] = useState('');
+  const { writeContract: writeRemoveActor, data: removeHash, isPending: isRemoving, error: removeError } = useWriteContract();
+  const { isLoading: isConfirmingRemoval, isSuccess: isRemoveSuccess, isError: isRemoveTxError } = useWaitForTransactionReceipt({
+    hash: removeHash,
+  });
+
   // Get all orders (owner can view all)
   const orderCount = orderCounter ? Number(orderCounter) : 0;
   const orderIds = Array.from({ length: orderCount }, (_, i) => BigInt(i + 1));
@@ -130,6 +137,46 @@ export function OwnerDashboard() {
     }
   }, [updateWindowError, isUpdateWindowTxError]);
 
+  // Remove Actor Effects
+  useEffect(() => {
+    if (isRemoving) toast.loading('Removing actor...', { id: 'remove-actor' });
+  }, [isRemoving]);
+
+  useEffect(() => {
+    if (isConfirmingRemoval) toast.loading('Waiting for confirmation...', { id: 'remove-actor' });
+  }, [isConfirmingRemoval]);
+
+  useEffect(() => {
+    if (isRemoveSuccess) {
+      toast.success('Actor removed successfully!', { id: 'remove-actor' });
+      setRemoveActorAddress('');
+      queryClient.invalidateQueries();
+      refetchDistributorPool();
+    }
+  }, [isRemoveSuccess, queryClient, refetchDistributorPool]);
+
+  useEffect(() => {
+    if (removeError || isRemoveTxError) {
+      toast.error(removeError?.message || 'Failed to remove actor', { id: 'remove-actor' });
+    }
+  }, [removeError, isRemoveTxError]);
+
+  const handleRemoveActor = () => {
+    if (!removeActorAddress) {
+      toast.error('Please enter an actor address');
+      return;
+    }
+
+    toast.loading(`Removing actor ${removeActorAddress.slice(0, 6)}...`, { id: 'remove-actor' });
+
+    writeRemoveActor({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'removeActor',
+      args: [removeActorAddress],
+    });
+  };
+
   const handleRegister = () => {
     if (!actorAddress) {
       toast.error('Please enter an actor address');
@@ -196,6 +243,34 @@ export function OwnerDashboard() {
             disabled={isPending || isConfirming || !actorAddress}
           >
             {isPending || isConfirming ? 'Registering...' : 'Register Actor'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+            </svg>
+            Remove Actor
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Actor Address to Remove</label>
+            <Input
+              placeholder="0x..."
+              value={removeActorAddress}
+              onChange={(e) => setRemoveActorAddress(e.target.value)}
+            />
+          </div>
+          <Button
+            onClick={handleRemoveActor}
+            variant="destructive"
+            disabled={isRemoving || isConfirmingRemoval || !removeActorAddress}
+          >
+            {isRemoving || isConfirmingRemoval ? 'Removing...' : 'Remove Actor'}
           </Button>
         </CardContent>
       </Card>

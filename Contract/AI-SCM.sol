@@ -115,6 +115,7 @@ contract AISupplyChain {
     // ==================== EVENTS ====================
     
     event ActorRegistered(address indexed actor, ActorRole role);
+    event ActorRemoved(address indexed actor, ActorRole role);
     event ProductListed(uint256 indexed productId, address indexed manufacturer, string name);
     event ProductUpdated(uint256 indexed productId, string name, uint256 price);
     event OrderPlaced(uint256 indexed bookingId, uint256 indexed productId, address indexed consumer);
@@ -189,6 +190,32 @@ contract AISupplyChain {
         }
         
         emit ActorRegistered(_actor, _role);
+    }
+
+    function removeActor(address _actor) external onlyOwner {
+        ActorRole currentRole = actorRoles[_actor];
+        require(currentRole != ActorRole.Consumer, "User has no privileged role to remove");
+
+        if (currentRole == ActorRole.Distributor) {
+            isDistributor[_actor] = false;
+            _removeFromArray(distributorPool, _actor);
+        } else if (currentRole == ActorRole.RawMaterialSupplier) {
+            isRMS[_actor] = false;
+            _removeFromArray(rmsPool, _actor);
+        }
+
+        delete actorRoles[_actor]; // Resets to default (Consumer)
+        emit ActorRemoved(_actor, currentRole);
+    }
+
+    function _removeFromArray(address[] storage _array, address _item) private {
+        for (uint256 i = 0; i < _array.length; i++) {
+            if (_array[i] == _item) {
+                _array[i] = _array[_array.length - 1];
+                _array.pop();
+                break;
+            }
+        }
     }
     
     // ==================== PRODUCT MANAGEMENT ====================

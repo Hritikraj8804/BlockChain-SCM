@@ -1,6 +1,6 @@
 // Contract ABI and Address
 // Replace CONTRACT_ADDRESS with your deployed contract address
-export const CONTRACT_ADDRESS = "0x3Aa5ebB10DC797CAC828524e59A333d0A371443c"; // TODO: Replace with actual address
+export const CONTRACT_ADDRESS = "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"; // TODO: Replace with actual address
 
 export const CONTRACT_ABI = [
 	{
@@ -25,6 +25,44 @@ export const CONTRACT_ABI = [
 			}
 		],
 		"name": "ActorRegistered",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "actor",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum AISupplyChain.ActorRole",
+				"name": "role",
+				"type": "uint8"
+			}
+		],
+		"name": "ActorRemoved",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "actor",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum AISupplyChain.ActorRole",
+				"name": "role",
+				"type": "uint8"
+			}
+		],
+		"name": "ActorRemoved",
 		"type": "event"
 	},
 	{
@@ -1605,6 +1643,19 @@ export const CONTRACT_ABI = [
 			}
 		],
 		"name": "updateProduct",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_actor",
+				"type": "address"
+			}
+		],
+		"name": "removeActor",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
