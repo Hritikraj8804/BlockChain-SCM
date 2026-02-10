@@ -8,11 +8,13 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { showLoading, showSuccess, showError, closeAlert } from '@/lib/sweetalert';
 import { MetaverseParticles, BlockchainNode } from '@/components/3d-elements';
+import { getOrderStatusText } from '@/utils/tracking-mapper';
 
 export function DistributorDashboard() {
   const { address } = useAccount();
   const queryClient = useQueryClient();
   const [processingReturnId, setProcessingReturnId] = useState(null);
+  const [processingOrderId, setProcessingOrderId] = useState(null);
 
   // Get distributor orders (only those assigned to this distributor)
   const { data: orderIds, refetch: refetchOrders } = useReadContract({
@@ -56,6 +58,7 @@ export function DistributorDashboard() {
     if (isSuccess) {
       closeAlert();
       showSuccess('Delivered product successfully!', 'Product has been delivered to consumer');
+      setProcessingOrderId(null);
       queryClient.invalidateQueries();
       refetchOrders();
     }
@@ -64,6 +67,7 @@ export function DistributorDashboard() {
     if (writeError || isTxError) {
       closeAlert();
       showError('Failed to confirm delivery', writeError?.message || 'Please try again');
+      setProcessingOrderId(null);
     }
   }, [writeError, isTxError]);
 
@@ -92,6 +96,7 @@ export function DistributorDashboard() {
   }, [pickupError, isPickupTxError]);
 
   const handleConfirmDelivery = (bookingId) => {
+    setProcessingOrderId(bookingId);
     showLoading(`Confirming delivery for order #${bookingId}...`, 'Processing delivery confirmation');
     writeContract({
       address: CONTRACT_ADDRESS,
@@ -160,6 +165,7 @@ export function DistributorDashboard() {
                     isConfirming={isPending || isConfirming}
                     isPickupConfirming={isPickupPending || isPickupConfirming}
                     processingReturnId={processingReturnId}
+                    processingOrderId={processingOrderId}
                   />
                 ))}
               </TableBody>
@@ -175,7 +181,7 @@ export function DistributorDashboard() {
   );
 }
 
-function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmReturnPickup, isConfirming, isPickupConfirming, processingReturnId }) {
+function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmReturnPickup, isConfirming, isPickupConfirming, processingReturnId, processingOrderId }) {
   const { data: order } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
@@ -195,19 +201,14 @@ function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmR
 
   if (!order) return null;
 
-  const statusMap = {
-    0: 'Pending',
-    1: 'Materials Requested',
-    2: 'Materials Dispatched',
-    3: 'In Production',
-    4: 'Ready For Shipping',
-    5: 'In Transit',
-    6: 'Delivered',
-    7: 'Return Requested',
-    8: 'Return In Transit',
-    9: 'Return Received',
-    10: 'Refunded',
-  };
+
+
+  // ... (inside OrderRow component)
+  if (!order) return null;
+
+  // Use the mapper instead of local statusMap
+  const statusText = getOrderStatusText(order.status);
+
 
   // Check if assigned for delivery or return pickup
   const isAssignedForDelivery = order.distributorAssigned?.toLowerCase() === distributorAddress?.toLowerCase();
@@ -217,6 +218,8 @@ function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmR
 
   // Check if this specific return is being processed
   const isThisReturnProcessing = returnRequest && processingReturnId && returnRequest.returnId.toString() === processingReturnId.toString();
+  // Check if this specific order is being processed for delivery
+  const isThisOrderProcessing = processingOrderId && bookingId.toString() === processingOrderId.toString();
 
   if (!isAssignedForDelivery && !isAssignedForReturn) return null;
 
@@ -224,7 +227,7 @@ function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmR
     <TableRow>
       <TableCell className="font-mono">#{bookingId.toString()}</TableCell>
       <TableCell>
-        <span className="text-sm">{statusMap[order.status] || 'Unknown'}</span>
+        <span className="text-sm">{statusText}</span>
       </TableCell>
       <TableCell>
         <div className="flex gap-2">
@@ -232,9 +235,9 @@ function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmR
             <Button
               size="sm"
               onClick={() => onConfirmDelivery(bookingId)}
-              disabled={isConfirming}
+              disabled={isThisOrderProcessing}
             >
-              {isConfirming ? 'Confirming...' : 'Confirm Delivery'}
+              {isThisOrderProcessing ? 'Confirming...' : 'Confirm Delivery'}
             </Button>
           )}
           {canPickupReturn && (

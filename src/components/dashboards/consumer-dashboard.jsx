@@ -12,6 +12,7 @@ import { ReturnRequestModal } from '@/components/return-request-modal';
 import { DeliveryConfirmationModal } from '@/components/delivery-confirmation-modal';
 import { showLoading, showSuccess, showError, closeAlert } from '@/lib/sweetalert';
 import { ProductCard3D, AnimatedCart } from '@/components/3d-elements';
+import { getOrderStatusText } from '@/utils/tracking-mapper';
 
 export function ConsumerDashboard() {
   const { address } = useAccount();
@@ -223,6 +224,18 @@ export function ConsumerDashboard() {
                       <CardTitle className="text-base font-semibold text-foreground line-clamp-1">
                         {product.name}
                       </CardTitle>
+                      {/* Stock Status Badge */}
+                      <div className="mt-1">
+                        {product.stock && Number(product.stock) > 0 ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                            {product.stock.toString()} in stock
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                            Made to Order
+                          </span>
+                        )}
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-3 p-4 bg-background/10 flex-grow flex flex-col">
                       <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2 flex-shrink-0" style={{ minHeight: '40px' }}>{product.description}</p>
@@ -348,19 +361,12 @@ function OrderRow({ bookingId, selectedOrder, setSelectedOrder, onRequestReturn 
 
   if (!order) return null;
 
-  const statusMap = {
-    0: 'Pending',
-    1: 'Materials Requested',
-    2: 'Materials Dispatched',
-    3: 'In Production',
-    4: 'Ready For Shipping',
-    5: 'In Transit',
-    6: 'Delivered',
-    7: 'Return Requested',
-    8: 'Return In Transit',
-    9: 'Return Received',
-    10: 'Refunded',
-  };
+
+
+  // ... (inside OrderRow)
+  if (!order) return null;
+
+  const statusText = getOrderStatusText(order.status);
 
   const formatTime = (seconds) => {
     if (!seconds || Number(seconds) === 0) return 'Expired';
@@ -375,7 +381,7 @@ function OrderRow({ bookingId, selectedOrder, setSelectedOrder, onRequestReturn 
       <TableCell className="font-mono">#{bookingId.toString()}</TableCell>
       <TableCell>
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{statusMap[order.status] || 'Unknown'}</span>
+          <span className="text-sm font-medium">{statusText}</span>
           {order.status === 6 && remainingTime && (
             <span className="text-xs text-gray-400">
               Return window: {formatTime(remainingTime)}

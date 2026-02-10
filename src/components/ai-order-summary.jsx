@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { GEMINI_API_URL, GEMINI_API_KEY } from '@/config/gemini';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { getTrackingStatusText, getActorRoleText } from '@/utils/tracking-mapper';
+
 function formatTimeDifference(seconds) {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -67,35 +69,40 @@ function generateNarrative(history) {
     const point = history[i];
     const prevPoint = i > 0 ? history[i - 1] : null;
 
+    // Convert Enums to Strings
+    const statusText = getTrackingStatusText(point.status);
+    const roleText = getActorRoleText(point.role, point.status);
+
     if (prevPoint) {
       const timeDiff = Number(point.timestamp) - Number(prevPoint.timestamp);
       const timeStr = formatTimeDifference(timeDiff);
 
       let action = '';
-      if (point.status.includes('Materials Requested')) {
-        action = `Materials were requested from ${point.role} in ${timeStr}.`;
-      } else if (point.status.includes('Materials Dispatched')) {
-        action = `Materials were dispatched by ${point.role} in ${timeStr}.`;
-      } else if (point.status.includes('Production Completed')) {
+      // Use statusText for comparison as it matches original strings
+      if (statusText.includes('Materials Requested')) {
+        action = `Materials were requested from ${roleText} in ${timeStr}.`;
+      } else if (statusText.includes('Materials Dispatched')) {
+        action = `Materials were dispatched by ${roleText} in ${timeStr}.`;
+      } else if (statusText.includes('Production Completed')) {
         action = `Production was completed in ${timeStr}.`;
-      } else if (point.status.includes('Randomly Assigned')) {
+      } else if (statusText.includes('Assigned for Delivery')) {
         action = `Distributor ${point.actor.slice(0, 6)}...${point.actor.slice(-4)} was randomly selected for delivery.`;
-      } else if (point.status.includes('Delivered')) {
+      } else if (statusText.includes('Delivered')) {
         action = `Order was delivered to consumer in ${timeStr}.`;
-      } else if (point.status.includes('Return Requested')) {
+      } else if (statusText.includes('Return Requested')) {
         action = `Return was requested by consumer in ${timeStr}.`;
-      } else if (point.status.includes('Return Approved')) {
+      } else if (statusText.includes('Return Approved')) {
         action = `Return was approved by manufacturer in ${timeStr}.`;
-      } else if (point.status.includes('Return Rejected')) {
+      } else if (statusText.includes('Return Rejected')) {
         action = `Return was rejected by manufacturer in ${timeStr}.`;
-      } else if (point.status.includes('Return Pickup')) {
+      } else if (statusText.includes('Return Pickup')) {
         action = `Return item was picked up by distributor in ${timeStr}.`;
-      } else if (point.status.includes('Return Received')) {
+      } else if (statusText.includes('Return Received')) {
         action = `Return was received by manufacturer in ${timeStr}.`;
-      } else if (point.status.includes('Refund Processed')) {
+      } else if (statusText.includes('Refund Processed')) {
         action = `Refund was processed to consumer in ${timeStr}.`;
       } else {
-        action = `${point.status} (${timeStr}).`;
+        action = `${statusText} (${timeStr}).`;
       }
 
       narratives.push(action);
@@ -114,7 +121,11 @@ async function generateAISummary(productInfo, trackingHistory) {
       const timeDiff = index > 0
         ? formatTimeDifference(Number(point.timestamp) - Number(trackingHistory[index - 1].timestamp))
         : 'Initial';
-      return `- ${point.status} by ${point.role} at ${date} (Duration: ${timeDiff})`;
+
+      const statusText = getTrackingStatusText(point.status);
+      const roleText = getActorRoleText(point.role, point.status);
+
+      return `- ${statusText} by ${roleText} at ${date} (Duration: ${timeDiff})`;
     }).join('\n');
 
     // Format price from wei to ETH
@@ -534,8 +545,8 @@ export function AIOrderSummary({ bookingId }) {
               <div className="flex justify-between">
                 <span className="font-medium text-gray-200">Status:</span>
                 <span className={`font-semibold ${returnRequest.completed ? 'text-green-300' :
-                    returnRequest.approved ? 'text-blue-300' :
-                      'text-orange-300'
+                  returnRequest.approved ? 'text-blue-300' :
+                    'text-orange-300'
                   }`}>
                   {returnRequest.completed ? 'Completed & Refunded' :
                     returnRequest.approved ? 'Approved - In Transit' :
@@ -574,9 +585,11 @@ export function AIOrderSummary({ bookingId }) {
                 {index < history.length - 1 && <TimelineConnector />}
                 <TimelineContent>
                   <div className="space-y-2 bg-slate-700/40 rounded-lg p-4 border border-blue-500/20">
-                    <div className="font-bold text-white text-lg leading-tight">{point.status}</div>
+                    <div className="font-bold text-white text-lg leading-tight">
+                      {getTrackingStatusText(point.status)}
+                    </div>
                     <div className="text-base text-gray-50 font-medium">
-                      {point.role} • {new Date(Number(point.timestamp) * 1000).toLocaleString()}
+                      {getActorRoleText(point.role, point.status)} • {new Date(Number(point.timestamp) * 1000).toLocaleString()}
                     </div>
                     {index > 0 && (
                       <div className="text-sm text-blue-300 font-semibold">

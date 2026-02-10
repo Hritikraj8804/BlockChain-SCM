@@ -60,11 +60,29 @@ contract AISupplyChain {
         Distributor
     }
     
+    enum TrackingStatus {
+        OrderPlaced,            // 0: "Order Placed"
+        MaterialsRequested,     // 1: "Materials Requested from RMS"
+        MaterialsDispatched,    // 2: "Materials Dispatched"
+        ProductionCompleted,    // 3: "Production Completed"
+        DistributorAssigned,    // 4: "Assigned for Delivery"
+        InTransit,              // 5: "In Transit"
+        Delivered,              // 6: "Delivered to Consumer"
+        ReturnRequested,        // 7: "Return Requested"
+        ReturnApproved,         // 8: "Return Approved"
+        ReturnRejected,         // 9: "Return Rejected"
+        ReturnPickupAssigned,   // 10: "Assigned for Return Pickup"
+        ReturnPickedUp,         // 11: "Return Picked Up"
+        ReturnReceived,         // 12: "Return Received"
+        RefundProcessed,        // 13: "Refund Processed"
+        EscrowReleased          // 14: "Escrow Released"
+    }
+
     struct TrackingPoint {
         address actor;
-        string role;
+        ActorRole role;       // Enum
         uint256 timestamp;
-        string status;
+        TrackingStatus status; // Enum
     }
     
     struct Product {
@@ -73,6 +91,7 @@ contract AISupplyChain {
         string imageUri;
         string description;
         uint256 price;
+        uint256 stock; // Added stock field
         address manufacturer;
         bool isActive;
     }
@@ -87,6 +106,8 @@ contract AISupplyChain {
         address distributorAssigned;
         OrderStatus status;
         uint256 createdAt;
+        uint256 deliveredAt;       // Timestamp when delivered (for escrow release)
+        bool fundsReleased;        // Whether escrow has been released to actors
         bool exists;
     }
     
@@ -99,7 +120,16 @@ contract AISupplyChain {
     uint256 public consumerCount; // Track number of consumers
     mapping(address => bool) public isConsumer; // Track registered consumers
     address[] public consumerPool; // Array of consumer addresses for display
-    uint256 public returnWindow = 7 days; // Default return window
+    uint256 public defaultReturnWindow = 7 days; // Default return window
+    
+    // Per-manufacturer return windows (in seconds)
+    mapping(address => uint256) public manufacturerReturnWindow;
+    
+    // Payment distribution percentages (in basis points, 100 = 1%)
+    uint256 public manufacturerShare = 7000; // 70%
+    uint256 public rmsShare = 2000;          // 20%
+    uint256 public distributorShare = 1000;  // 10%
+    uint256 public constant TOTAL_SHARES = 10000; // 100%
     
     // Registries
     mapping(address => ActorRole) public actorRoles;
@@ -133,15 +163,15 @@ contract AISupplyChain {
     
     event ActorRegistered(address indexed actor, ActorRole role);
     event ActorRemoved(address indexed actor, ActorRole role);
-    event ProductListed(uint256 indexed productId, address indexed manufacturer, string name);
-    event ProductUpdated(uint256 indexed productId, string name, uint256 price);
+    event ProductListed(uint256 indexed productId, address indexed manufacturer, string name, uint256 stock);
+    event ProductUpdated(uint256 indexed productId, string name, uint256 price, uint256 stock);
     event OrderPlaced(uint256 indexed bookingId, uint256 indexed productId, address indexed consumer);
     event MaterialsRequested(uint256 indexed bookingId, address indexed rms);
     event MaterialsDispatched(uint256 indexed bookingId, address indexed rms);
     event ProductionCompleted(uint256 indexed bookingId, address indexed manufacturer);
     event DistributorAssigned(uint256 indexed bookingId, address indexed distributor);
     event OrderDelivered(uint256 indexed bookingId, address indexed distributor);
-    event TrackingPointAdded(uint256 indexed bookingId, address actor, string role, string status);
+    event TrackingPointAdded(uint256 indexed bookingId, address actor, ActorRole role, TrackingStatus status);
     
     // Return events
     event ReturnRequested(uint256 indexed returnId, uint256 indexed bookingId, address indexed consumer, ReturnReason reason);
@@ -150,6 +180,20 @@ contract AISupplyChain {
     event ReturnPickedUp(uint256 indexed returnId, address indexed distributor);
     event ReturnReceived(uint256 indexed returnId, uint256 indexed bookingId);
     event RefundProcessed(uint256 indexed returnId, uint256 indexed bookingId, uint256 amount);
+    
+    // Payment distribution event
+    event PaymentDistributed(
+        uint256 indexed bookingId, 
+        address manufacturer, 
+        uint256 manufacturerAmount,
+        address rms,
+        uint256 rmsAmount,
+        address distributor, 
+        uint256 distributorAmount
+    );
+    event PaymentSharesUpdated(uint256 manufacturerShare, uint256 rmsShare, uint256 distributorShare);
+    event ReturnWindowUpdated(address indexed manufacturer, uint256 returnWindow);
+    event EscrowReleased(uint256 indexed bookingId, uint256 amount);
     
     // ==================== MODIFIERS ====================
     
@@ -268,13 +312,52 @@ contract AISupplyChain {
         }
     }
     
+    // ==================== PAYMENT SHARE MANAGEMENT ====================
+    
+    function updatePaymentShares(
+        uint256 _manufacturerShare,
+        uint256 _rmsShare,
+        uint256 _distributorShare
+    ) external onlyOwner {
+        if (_manufacturerShare + _rmsShare + _distributorShare != TOTAL_SHARES) 
+            revert InvalidStatus();
+        manufacturerShare = _manufacturerShare;
+        rmsShare = _rmsShare;
+        distributorShare = _distributorShare;
+        emit PaymentSharesUpdated(_manufacturerShare, _rmsShare, _distributorShare);
+    }
+    
+    function getPaymentShares() external view returns (
+        uint256 _manufacturerShare,
+        uint256 _rmsShare,
+        uint256 _distributorShare
+    ) {
+        return (manufacturerShare, rmsShare, distributorShare);
+    }
+    
+    // ==================== MANUFACTURER RETURN WINDOW ====================
+    
+    // Manufacturer sets their own return window (in seconds)
+    function setReturnWindow(uint256 _returnWindowSeconds) external onlyManufacturer {
+        manufacturerReturnWindow[msg.sender] = _returnWindowSeconds;
+        emit ReturnWindowUpdated(msg.sender, _returnWindowSeconds);
+    }
+    
+    // Get return window for a manufacturer (returns default if not set)
+    function getReturnWindow(address _manufacturer) external view returns (uint256) {
+        uint256 window = manufacturerReturnWindow[_manufacturer];
+        if (window == 0) return defaultReturnWindow;
+        return window;
+    }
+    
     // ==================== PRODUCT MANAGEMENT ====================
     
     function listProduct(
         string memory _name,
         string memory _imageURI,
         string memory _description,
-        uint256 _price
+        uint256 _price,
+        uint256 _stock // Added stock param
     ) external onlyManufacturer returns (uint256) {
         productCounter++;
         
@@ -284,11 +367,12 @@ contract AISupplyChain {
             imageUri: _imageURI,
             description: _description,
             price: _price,
+            stock: _stock, // Set stock
             manufacturer: msg.sender,
             isActive: true
         });
         
-        emit ProductListed(productCounter, msg.sender, _name);
+        emit ProductListed(productCounter, msg.sender, _name, _stock);
         return productCounter;
     }
     
@@ -302,7 +386,8 @@ contract AISupplyChain {
         string memory _name,
         string memory _imageUri,
         string memory _description,
-        uint256 _price
+        uint256 _price,
+        uint256 _stock // Added stock param
     ) external {
         if (products[_productId].manufacturer != msg.sender) revert Unauthorized();
         if (!products[_productId].isActive) revert InvalidProduct();
@@ -312,8 +397,9 @@ contract AISupplyChain {
         product.imageUri = _imageUri;
         product.description = _description;
         product.price = _price;
+        product.stock = _stock; // Update stock
 
-        emit ProductUpdated(_productId, _name, _price);
+        emit ProductUpdated(_productId, _name, _price, _stock);
     }
     
     // ==================== ORDER WORKFLOW ====================
@@ -326,32 +412,87 @@ contract AISupplyChain {
             isConsumer[msg.sender] = true;
         }
 
-        Product memory product = products[_productId];
+        Product storage product = products[_productId];
         if (!product.isActive) revert InvalidProduct();
         if (msg.value < product.price) revert InsufficientFunds();
         
         orderCounter++;
         uint256 bookingId = orderCounter;
         
+        OrderStatus initialStatus = OrderStatus.Pending;
+        address assignedRms = address(0);
+        
+        // CHECK STOCK: If stock > 0, fulfill from stock and skip RMS request step
+        if (product.stock > 0) {
+            product.stock--; // Decrement stock
+            
+            // AUTOMATIC DISTRIBUTOR ASSIGNMENT (Skip Production if Stock Available)
+            if (distributorPool.length > 0) {
+                 initialStatus = OrderStatus.InTransit; // Skip straight to In Transit
+                 assignedRms = product.manufacturer; // Self-supply
+                 
+                 // Random Distributor Selection
+                 uint256 randomIndex = uint256(
+                    keccak256(abi.encodePacked(block.timestamp, msg.sender, distributorPool.length))
+                 ) % distributorPool.length;
+                 
+                  address selectedDistributor = distributorPool[randomIndex];
+                  
+                  // We need to set this later in the struct, so we'll do it then
+                  // But we need to emit events now or after struct creation
+            } else {
+                 // Fallback if no distributors available yet
+                 initialStatus = OrderStatus.MaterialsDispatched; 
+                 assignedRms = product.manufacturer;
+            }
+        }
+        
+        address finalDistributor = (initialStatus == OrderStatus.InTransit) ? 
+            distributorPool[uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender, distributorPool.length))) % distributorPool.length] : 
+            address(0);
+
         orders[bookingId] = Order({
             bookingId: bookingId,
             productId: _productId,
             consumer: msg.sender,
             manufacturer: product.manufacturer,
-            pricePaid: msg.value,     // Store the amount paid by consumer
-            rmsAssigned: address(0),
-            distributorAssigned: address(0),
-            status: OrderStatus.Pending,
+            pricePaid: msg.value,
+            rmsAssigned: assignedRms,
+            distributorAssigned: finalDistributor,
+            status: initialStatus,
             createdAt: block.timestamp,
+            deliveredAt: 0,
+            fundsReleased: false,
             exists: true
         });
         
         // Add to dashboards
         actorOrders[msg.sender].push(bookingId);
         actorOrders[product.manufacturer].push(bookingId);
+        if (finalDistributor != address(0)) {
+            actorOrders[finalDistributor].push(bookingId);
+        }
         
         // Track this event
-        _addTrackingPoint(bookingId, msg.sender, "Consumer", "Order Placed");
+        _addTrackingPoint(bookingId, msg.sender, ActorRole.Consumer, TrackingStatus.OrderPlaced);
+        
+        // If stock was used
+        if (product.stock + 1 > product.stock) { // check if stock was decremented (hacky but redundant check logic above covers it)
+             // We know stock was used if initialStatus is MaterialsDispatched OR InTransit
+             if (initialStatus == OrderStatus.MaterialsDispatched || initialStatus == OrderStatus.InTransit) {
+                  _addTrackingPoint(bookingId, product.manufacturer, ActorRole.Manufacturer, TrackingStatus.MaterialsDispatched);
+                  emit MaterialsDispatched(bookingId, product.manufacturer);
+             }
+             
+             if (initialStatus == OrderStatus.InTransit) {
+                 // Simulate production completion -> distributor assignment
+                 _addTrackingPoint(bookingId, product.manufacturer, ActorRole.Manufacturer, TrackingStatus.ProductionCompleted);
+                 emit ProductionCompleted(bookingId, product.manufacturer);
+                 
+                 _addTrackingPoint(bookingId, finalDistributor, ActorRole.Distributor, TrackingStatus.DistributorAssigned);
+                 emit DistributorAssigned(bookingId, finalDistributor);
+             }
+        }
         
         emit OrderPlaced(bookingId, _productId, msg.sender);
         return bookingId;
@@ -374,7 +515,7 @@ contract AISupplyChain {
         // Add to RMS dashboard
         actorOrders[_rmsAddress].push(_bookingId);
         
-        _addTrackingPoint(_bookingId, msg.sender, "Manufacturer", "Materials Requested from RMS");
+        _addTrackingPoint(_bookingId, msg.sender, ActorRole.Manufacturer, TrackingStatus.MaterialsRequested);
         
         emit MaterialsRequested(_bookingId, _rmsAddress);
     }
@@ -391,7 +532,7 @@ contract AISupplyChain {
         
         order.status = OrderStatus.MaterialsDispatched;
         
-        _addTrackingPoint(_bookingId, msg.sender, "Raw Material Supplier", "Materials Dispatched to Manufacturer");
+        _addTrackingPoint(_bookingId, msg.sender, ActorRole.RawMaterialSupplier, TrackingStatus.MaterialsDispatched);
         
         emit MaterialsDispatched(_bookingId, msg.sender);
     }
@@ -409,7 +550,7 @@ contract AISupplyChain {
         
         // Mark production complete
         order.status = OrderStatus.ReadyForShipping;
-        _addTrackingPoint(_bookingId, msg.sender, "Manufacturer", "Production Completed - Ready for Shipping");
+        _addTrackingPoint(_bookingId, msg.sender, ActorRole.Manufacturer, TrackingStatus.ProductionCompleted);
         
         // AUTOMATIC RANDOM DISTRIBUTOR SELECTION
         uint256 randomIndex = uint256(
@@ -423,13 +564,15 @@ contract AISupplyChain {
         // Add to distributor dashboard
         actorOrders[selectedDistributor].push(_bookingId);
         
-        _addTrackingPoint(_bookingId, selectedDistributor, "Distributor", "Randomly Assigned for Delivery");
+        _addTrackingPoint(_bookingId, selectedDistributor, ActorRole.Distributor, TrackingStatus.DistributorAssigned);
         
         emit ProductionCompleted(_bookingId, msg.sender);
         emit DistributorAssigned(_bookingId, selectedDistributor);
     }
     
     // Step 5: Distributor confirms delivery to consumer
+    // Step 5: Distributor confirms delivery to consumer
+    // Payment is held in escrow until return window expires
     function confirmDelivery(uint256 _bookingId) 
         external 
         onlyDistributor 
@@ -440,14 +583,62 @@ contract AISupplyChain {
         if (order.status != OrderStatus.InTransit) revert InvalidStatus();
         
         order.status = OrderStatus.Delivered;
+        order.deliveredAt = block.timestamp;
+        // fundsReleased stays false - payment held in escrow
         
-        _addTrackingPoint(_bookingId, msg.sender, "Distributor", "Delivered to Consumer");
-        
-        // Transfer payment to manufacturer
-        (bool success, ) = payable(order.manufacturer).call{value: products[order.productId].price}("");
-        if (!success) revert InsufficientFunds();
+        _addTrackingPoint(_bookingId, msg.sender, ActorRole.Distributor, TrackingStatus.Delivered);
         
         emit OrderDelivered(_bookingId, msg.sender);
+    }
+    
+    // Release escrow after return window expires - anyone can call
+    function releaseEscrow(uint256 _bookingId) 
+        external 
+        orderExists(_bookingId) 
+    {
+        Order storage order = orders[_bookingId];
+        
+        if (order.status != OrderStatus.Delivered) revert InvalidStatus();
+        if (order.fundsReleased) revert AlreadyExists();
+        if (hasActiveReturn[_bookingId]) revert InvalidStatus(); // Cannot release if return in progress
+        
+        // Check if return window has expired
+        uint256 returnWindowDuration = manufacturerReturnWindow[order.manufacturer];
+        if (returnWindowDuration == 0) {
+            returnWindowDuration = defaultReturnWindow;
+        }
+        
+        if (block.timestamp < order.deliveredAt + returnWindowDuration) {
+            revert InvalidWindow(); // Return window not expired yet
+        }
+        
+        order.fundsReleased = true;
+        
+        _addTrackingPoint(_bookingId, msg.sender, ActorRole.Consumer, TrackingStatus.EscrowReleased);
+        
+        // Calculate payment shares
+        uint256 totalPayment = order.pricePaid;
+        uint256 mfrAmount = (totalPayment * manufacturerShare) / TOTAL_SHARES;
+        uint256 rmsAmount = (totalPayment * rmsShare) / TOTAL_SHARES;
+        uint256 distAmount = totalPayment - mfrAmount - rmsAmount;
+        
+        // Transfer payments
+        (bool s1, ) = payable(order.manufacturer).call{value: mfrAmount}("");
+        if (!s1) revert InsufficientFunds();
+        
+        (bool s2, ) = payable(order.rmsAssigned).call{value: rmsAmount}("");
+        if (!s2) revert InsufficientFunds();
+        
+        (bool s3, ) = payable(order.distributorAssigned).call{value: distAmount}("");
+        if (!s3) revert InsufficientFunds();
+        
+        emit PaymentDistributed(
+            _bookingId, 
+            order.manufacturer, mfrAmount,
+            order.rmsAssigned, rmsAmount,
+            order.distributorAssigned, distAmount
+        );
+        emit EscrowReleased(_bookingId, totalPayment);
     }
     
     // ==================== TRACKING SYSTEM ====================
@@ -455,8 +646,8 @@ contract AISupplyChain {
     function _addTrackingPoint(
         uint256 _bookingId,
         address _actor,
-        string memory _role,
-        string memory _status
+        ActorRole _role,
+        TrackingStatus _status
     ) private {
         orderHistory[_bookingId].push(TrackingPoint({
             actor: _actor,
@@ -585,7 +776,14 @@ contract AISupplyChain {
         if (order.consumer != msg.sender) revert Unauthorized();
         if (order.status != OrderStatus.Delivered) revert InvalidStatus();
         if (hasActiveReturn[_bookingId]) revert AlreadyExists();
-        if (block.timestamp > order.createdAt + returnWindow) revert InvalidWindow();
+        if (order.fundsReleased) revert InvalidWindow(); // Cannot return if funds already released
+        
+        // Check per-manufacturer return window
+        uint256 returnWindowDuration = manufacturerReturnWindow[order.manufacturer];
+        if (returnWindowDuration == 0) {
+            returnWindowDuration = defaultReturnWindow;
+        }
+        if (block.timestamp > order.deliveredAt + returnWindowDuration) revert InvalidWindow();
         
         returnCounter++;
         uint256 returnId = returnCounter;
@@ -613,16 +811,16 @@ contract AISupplyChain {
         _addTrackingPoint(
             _bookingId,
             msg.sender,
-            "Consumer",
-            string(abi.encodePacked("Return Requested - Reason: ", _getReasonString(_reason)))
+            ActorRole.Consumer,
+            TrackingStatus.ReturnRequested
         );
         
         emit ReturnRequested(returnId, _bookingId, msg.sender, _reason);
         return returnId;
     }
     
-    // Step 2: Manufacturer approves or rejects return
-    function approveReturn(uint256 _returnId) external payable onlyManufacturer {
+    // Step 2: Manufacturer approves return - refund comes from escrow
+    function approveReturn(uint256 _returnId) external onlyManufacturer {
         ReturnRequest storage returnReq = returnRequests[_returnId];
         Order storage order = orders[returnReq.bookingId];
         
@@ -630,11 +828,11 @@ contract AISupplyChain {
         if (order.manufacturer != msg.sender) revert Unauthorized();
         if (returnReq.approved) revert AlreadyExists();
         if (order.status != OrderStatus.ReturnRequested) revert InvalidStatus();
-        if (msg.value < order.pricePaid) revert InsufficientFunds();
+        if (order.fundsReleased) revert InvalidStatus(); // Escrow already released
         
         returnReq.approved = true;
-        returnReq.refundAmount = msg.value;       // Store the deposited refund
-        returnReq.refundDeposited = true;         // Mark refund as deposited
+        returnReq.refundAmount = order.pricePaid;  // Full refund from escrow
+        returnReq.refundDeposited = true;          // Escrow is already in contract
         
         // Randomly assign a distributor for return pickup
         if (distributorPool.length == 0) revert NotFound();
@@ -652,15 +850,26 @@ contract AISupplyChain {
         _addTrackingPoint(
             returnReq.bookingId,
             msg.sender,
-            "Manufacturer",
-            "Return Approved - Refund Deposited - Distributor Assigned for Pickup"
+            ActorRole.Manufacturer,
+            TrackingStatus.ReturnApproved
         );
+
+        // Process refund to consumer immediately (User Request)
+        uint256 refundAmount = order.pricePaid;
+        returnReq.refundProcessed = true;
+        (bool success, ) = payable(order.consumer).call{value: refundAmount}("");
+        if (!success) revert InsufficientFunds();
+        
+        // Update order status to show refund processed but still in transit
+        // We keep it as ReturnInTransit for tracking, but refund is done.
+        
+        emit RefundProcessed(_returnId, returnReq.bookingId, refundAmount);
         
         _addTrackingPoint(
             returnReq.bookingId,
             selectedDistributor,
-            "Distributor",
-            "Assigned for Return Pickup"
+            ActorRole.Distributor,
+            TrackingStatus.ReturnPickupAssigned
         );
         
         emit ReturnApproved(_returnId, returnReq.bookingId);
@@ -683,8 +892,8 @@ contract AISupplyChain {
         _addTrackingPoint(
             returnReq.bookingId,
             msg.sender,
-            "Manufacturer",
-            string(abi.encodePacked("Return Rejected - ", _rejectionReason))
+            ActorRole.Manufacturer,
+            TrackingStatus.ReturnRejected
         );
         
         emit ReturnRejected(_returnId, returnReq.bookingId, _rejectionReason);
@@ -706,8 +915,8 @@ contract AISupplyChain {
         _addTrackingPoint(
             returnReq.bookingId,
             msg.sender,
-            "Distributor",
-            "Return Item Picked Up from Consumer"
+            ActorRole.Distributor,
+            TrackingStatus.ReturnPickedUp
         );
         
         emit ReturnPickedUp(_returnId, msg.sender);
@@ -721,7 +930,8 @@ contract AISupplyChain {
         if (returnReq.bookingId == 0) revert NotFound();
         if (!returnReq.approved) revert InvalidStatus();
         if (!returnReq.pickedUp) revert InvalidStatus();
-        if (!returnReq.refundDeposited) revert InvalidStatus();
+        if (!returnReq.pickedUp) revert InvalidStatus();
+        // if (!returnReq.refundDeposited) revert InvalidStatus(); // refundDeposited is true but money already sent
         if (order.manufacturer != msg.sender) revert Unauthorized();
         if (order.status != OrderStatus.ReturnInTransit) revert InvalidStatus();
         if (returnReq.completed) revert AlreadyExists();
@@ -732,27 +942,24 @@ contract AISupplyChain {
         _addTrackingPoint(
             returnReq.bookingId,
             msg.sender,
-            "Manufacturer",
-            "Return Received - Processing Refund"
+            ActorRole.Manufacturer,
+            TrackingStatus.ReturnReceived
         );
         
-        // Process refund to consumer using the deposited amount
-        uint256 refundAmount = returnReq.refundAmount;
-        returnReq.refundProcessed = true;
-        (bool success, ) = payable(order.consumer).call{value: refundAmount}("");
-        if (!success) revert InsufficientFunds();
+        // Refund already processed in approveReturn
         
         order.status = OrderStatus.Refunded;
         
         _addTrackingPoint(
             returnReq.bookingId,
             order.consumer,
-            "Consumer",
-            "Refund Processed"
+            ActorRole.Consumer,
+            TrackingStatus.RefundProcessed
         );
         
         emit ReturnReceived(_returnId, returnReq.bookingId);
-        emit RefundProcessed(_returnId, returnReq.bookingId, refundAmount);
+        emit ReturnReceived(_returnId, returnReq.bookingId);
+        // emit RefundProcessed(_returnId, returnReq.bookingId, refundAmount); // Already emitted
     }
     
     // ==================== RETURN SYSTEM VIEW FUNCTIONS ====================
@@ -776,7 +983,12 @@ contract AISupplyChain {
         
         if (order.status != OrderStatus.Delivered) return false;
         if (hasActiveReturn[_bookingId]) return false;
-        if (block.timestamp > order.createdAt + returnWindow) return false;
+        // Check per-manufacturer return window
+        uint256 returnWindowDuration = manufacturerReturnWindow[order.manufacturer];
+        if (returnWindowDuration == 0) {
+            returnWindowDuration = defaultReturnWindow;
+        }
+        if (block.timestamp > order.deliveredAt + returnWindowDuration) return false;
         
         return true;
     }
@@ -784,16 +996,17 @@ contract AISupplyChain {
     // Get remaining return window time
     function getRemainingReturnTime(uint256 _bookingId) external view orderExists(_bookingId) returns (uint256) {
         Order memory order = orders[_bookingId];
-        uint256 deadline = order.createdAt + returnWindow;
+        
+        // Check per-manufacturer return window
+        uint256 returnWindowDuration = manufacturerReturnWindow[order.manufacturer];
+        if (returnWindowDuration == 0) {
+            returnWindowDuration = defaultReturnWindow;
+        }
+        
+        uint256 deadline = order.deliveredAt + returnWindowDuration;
         
         if (block.timestamp >= deadline) return 0;
         return deadline - block.timestamp;
-    }
-    
-    // Admin: Update return window (only owner)
-    function updateReturnWindow(uint256 _newWindow) external onlyOwner {
-        if (_newWindow == 0) revert InvalidWindow();
-        returnWindow = _newWindow;
     }
     
     // Helper function to convert ReturnReason enum to string
