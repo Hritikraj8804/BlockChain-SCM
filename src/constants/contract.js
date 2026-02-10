@@ -1,6 +1,6 @@
 // Contract ABI and Address
 // Replace CONTRACT_ADDRESS with your deployed contract address
-export const CONTRACT_ADDRESS = "0xFD471836031dc5108809D173A067e8486B9047A3"; // TODO: Replace with actual address
+export const CONTRACT_ADDRESS = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"; // TODO: Replace with actual address
 
 export const CONTRACT_ABI = [
 	{
@@ -186,6 +186,12 @@ export const CONTRACT_ABI = [
 				"internalType": "string",
 				"name": "name",
 				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "stock",
+				"type": "uint256"
 			}
 		],
 		"name": "ProductListed",
@@ -210,6 +216,12 @@ export const CONTRACT_ABI = [
 				"indexed": false,
 				"internalType": "uint256",
 				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "stock",
 				"type": "uint256"
 			}
 		],
@@ -415,15 +427,15 @@ export const CONTRACT_ABI = [
 			},
 			{
 				"indexed": false,
-				"internalType": "string",
+				"internalType": "enum AISupplyChain.ActorRole",
 				"name": "role",
-				"type": "string"
+				"type": "uint8"
 			},
 			{
 				"indexed": false,
-				"internalType": "string",
+				"internalType": "enum AISupplyChain.TrackingStatus",
 				"name": "status",
-				"type": "string"
+				"type": "uint8"
 			}
 		],
 		"name": "TrackingPointAdded",
@@ -653,6 +665,11 @@ export const CONTRACT_ABI = [
 						"type": "uint256"
 					},
 					{
+						"internalType": "uint256",
+						"name": "stock",
+						"type": "uint256"
+					},
+					{
 						"internalType": "address",
 						"name": "manufacturer",
 						"type": "address"
@@ -779,9 +796,9 @@ export const CONTRACT_ABI = [
 						"type": "address"
 					},
 					{
-						"internalType": "string",
+						"internalType": "enum AISupplyChain.ActorRole",
 						"name": "role",
-						"type": "string"
+						"type": "uint8"
 					},
 					{
 						"internalType": "uint256",
@@ -789,9 +806,9 @@ export const CONTRACT_ABI = [
 						"type": "uint256"
 					},
 					{
-						"internalType": "string",
+						"internalType": "enum AISupplyChain.TrackingStatus",
 						"name": "status",
-						"type": "string"
+						"type": "uint8"
 					}
 				],
 				"internalType": "struct AISupplyChain.TrackingPoint[]",
@@ -860,6 +877,16 @@ export const CONTRACT_ABI = [
 						"type": "uint256"
 					},
 					{
+						"internalType": "uint256",
+						"name": "deliveredAt",
+						"type": "uint256"
+					},
+					{
+						"internalType": "bool",
+						"name": "fundsReleased",
+						"type": "bool"
+					},
+					{
 						"internalType": "bool",
 						"name": "exists",
 						"type": "bool"
@@ -908,6 +935,11 @@ export const CONTRACT_ABI = [
 					{
 						"internalType": "uint256",
 						"name": "price",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "stock",
 						"type": "uint256"
 					},
 					{
@@ -1004,6 +1036,11 @@ export const CONTRACT_ABI = [
 						"internalType": "address",
 						"name": "returnDistributor",
 						"type": "address"
+					},
+					{
+						"internalType": "bool",
+						"name": "pickedUp",
+						"type": "bool"
 					},
 					{
 						"internalType": "uint256",
@@ -1240,6 +1277,11 @@ export const CONTRACT_ABI = [
 			{
 				"internalType": "uint256",
 				"name": "_price",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_stock",
 				"type": "uint256"
 			}
 		],
@@ -1635,6 +1677,11 @@ export const CONTRACT_ABI = [
 				"type": "address"
 			},
 			{
+				"internalType": "bool",
+				"name": "pickedUp",
+				"type": "bool"
+			},
+			{
 				"internalType": "uint256",
 				"name": "refundAmount",
 				"type": "uint256"
@@ -1651,32 +1698,6 @@ export const CONTRACT_ABI = [
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "returnWindow",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_newWindow",
-				"type": "uint256"
-			}
-		],
-		"name": "updateReturnWindow",
-		"outputs": [],
-		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1705,6 +1726,11 @@ export const CONTRACT_ABI = [
 				"internalType": "uint256",
 				"name": "_price",
 				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_stock",
+				"type": "uint256"
 			}
 		],
 		"name": "updateProduct",
@@ -1723,6 +1749,293 @@ export const CONTRACT_ABI = [
 		"name": "removeActor",
 		"outputs": [],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getPaymentShares",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "_manufacturerShare",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_rmsShare",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_distributorShare",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_manufacturerShare",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_rmsShare",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_distributorShare",
+				"type": "uint256"
+			}
+		],
+		"name": "updatePaymentShares",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "manufacturerShare",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "rmsShare",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "distributorShare",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "TOTAL_SHARES",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "bookingId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "manufacturer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "manufacturerAmount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "rms",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "rmsAmount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "distributor",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "distributorAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "PaymentDistributed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "manufacturerShare",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "rmsShare",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "distributorShare",
+				"type": "uint256"
+			}
+		],
+		"name": "PaymentSharesUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "manufacturer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "returnWindow",
+				"type": "uint256"
+			}
+		],
+		"name": "ReturnWindowUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "bookingId",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "EscrowReleased",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_bookingId",
+				"type": "uint256"
+			}
+		],
+		"name": "releaseEscrow",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_returnWindowSeconds",
+				"type": "uint256"
+			}
+		],
+		"name": "setReturnWindow",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_manufacturer",
+				"type": "address"
+			}
+		],
+		"name": "getReturnWindow",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "defaultReturnWindow",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "manufacturerReturnWindow",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	}
 ]

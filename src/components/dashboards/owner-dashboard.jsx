@@ -15,7 +15,12 @@ export function OwnerDashboard() {
   const [actorAddress, setActorAddress] = useState('');
   const [selectedRole, setSelectedRole] = useState('0');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [returnWindowDays, setReturnWindowDays] = useState('');
+
+  // Payment share state
+  const [newMfrShare, setNewMfrShare] = useState('');
+  const [newRmsShare, setNewRmsShare] = useState('');
+  const [newDistShare, setNewDistShare] = useState('');
+
   const queryClient = useQueryClient();
 
   const { writeContract, data: hash, isPending, error: writeError } = useWriteContract();
@@ -82,15 +87,16 @@ export function OwnerDashboard() {
     functionName: 'getConsumerPool',
   });
 
-  const { data: returnWindow, refetch: refetchReturnWindow } = useReadContract({
+  // Payment shares
+  const { data: paymentShares, refetch: refetchPaymentShares } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
-    functionName: 'returnWindow',
+    functionName: 'getPaymentShares',
   });
 
-  const { writeContract: writeUpdateReturnWindow, data: updateWindowHash, isPending: isUpdatingWindow, error: updateWindowError } = useWriteContract();
-  const { isLoading: isUpdatingWindowConfirming, isSuccess: isUpdateWindowSuccess, isError: isUpdateWindowTxError } = useWaitForTransactionReceipt({
-    hash: updateWindowHash,
+  const { writeContract: writeUpdatePaymentShares, data: updateSharesHash, isPending: isUpdatingShares, error: updateSharesError } = useWriteContract();
+  const { isLoading: isUpdatingSharesConfirming, isSuccess: isUpdateSharesSuccess, isError: isUpdateSharesTxError } = useWaitForTransactionReceipt({
+    hash: updateSharesHash,
   });
 
   // Remove Actor state
@@ -134,47 +140,58 @@ export function OwnerDashboard() {
     }
   }, [isSuccess, queryClient, refetchDistributorPool, refetchRmsPool, refetchManufacturerPool, refetchActiveProducts, refetchProductCounter, refetchOrderCounter, refetchConsumerCount, refetchConsumerPool]);
 
-  const handleUpdateReturnWindow = () => {
-    if (!returnWindowDays || parseFloat(returnWindowDays) <= 0) {
-      toast.error('Please enter a valid number of days');
-      return;
-    }
-    const daysInSeconds = BigInt(Math.floor(parseFloat(returnWindowDays) * 86400));
-    toast.loading(`Updating return window to ${returnWindowDays} days...`, { id: 'update-window' });
-    writeUpdateReturnWindow({
-      address: CONTRACT_ADDRESS,
-      abi: CONTRACT_ABI,
-      functionName: 'updateReturnWindow',
-      args: [daysInSeconds],
-    });
-  };
-
   useEffect(() => {
     if (writeError || isTxError) {
       toast.error(writeError?.message || 'Transaction failed', { id: 'register-actor' });
     }
   }, [writeError, isTxError]);
 
-  // Toast notifications for update return window
+  // Toast notifications for payment shares
   useEffect(() => {
-    if (isUpdatingWindow) toast.loading('Updating return window...', { id: 'update-window' });
-  }, [isUpdatingWindow]);
+    if (isUpdatingShares) toast.loading('Updating payment shares...', { id: 'update-shares' });
+  }, [isUpdatingShares]);
   useEffect(() => {
-    if (isUpdatingWindowConfirming) toast.loading('Waiting for confirmation...', { id: 'update-window' });
-  }, [isUpdatingWindowConfirming]);
+    if (isUpdatingSharesConfirming) toast.loading('Waiting for confirmation...', { id: 'update-shares' });
+  }, [isUpdatingSharesConfirming]);
   useEffect(() => {
-    if (isUpdateWindowSuccess) {
-      toast.success('Return window updated successfully!', { id: 'update-window' });
-      setReturnWindowDays('');
+    if (isUpdateSharesSuccess) {
+      toast.success('Payment shares updated successfully!', { id: 'update-shares' });
+      setNewMfrShare('');
+      setNewRmsShare('');
+      setNewDistShare('');
       queryClient.invalidateQueries();
-      refetchReturnWindow();
+      refetchPaymentShares();
     }
-  }, [isUpdateWindowSuccess, queryClient, refetchReturnWindow]);
+  }, [isUpdateSharesSuccess, queryClient, refetchPaymentShares]);
   useEffect(() => {
-    if (updateWindowError || isUpdateWindowTxError) {
-      toast.error(updateWindowError?.message || 'Failed to update return window', { id: 'update-window' });
+    if (updateSharesError || isUpdateSharesTxError) {
+      toast.error(updateSharesError?.message || 'Failed to update payment shares', { id: 'update-shares' });
     }
-  }, [updateWindowError, isUpdateWindowTxError]);
+  }, [updateSharesError, isUpdateSharesTxError]);
+
+  const handleUpdatePaymentShares = () => {
+    const mfr = parseFloat(newMfrShare) || 0;
+    const rms = parseFloat(newRmsShare) || 0;
+    const dist = parseFloat(newDistShare) || 0;
+
+    if (mfr + rms + dist !== 100) {
+      toast.error('Payment shares must total 100%');
+      return;
+    }
+
+    // Convert percentages to basis points (multiply by 100)
+    const mfrBp = BigInt(Math.round(mfr * 100));
+    const rmsBp = BigInt(Math.round(rms * 100));
+    const distBp = BigInt(Math.round(dist * 100));
+
+    toast.loading(`Updating shares: MFR ${mfr}%, RMS ${rms}%, Dist ${dist}%...`, { id: 'update-shares' });
+    writeUpdatePaymentShares({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'updatePaymentShares',
+      args: [mfrBp, rmsBp, distBp],
+    });
+  };
 
   // Remove Actor Effects
   useEffect(() => {
@@ -412,34 +429,72 @@ export function OwnerDashboard() {
       <Card>
         <CardHeader className="border-b border-border/60 bg-card/30">
           <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Return Window Settings
+            Payment Distribution
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Current Return Window</label>
-            <div className="text-lg font-semibold text-foreground">
-              {returnWindow ? `${Number(returnWindow) / 86400} days` : 'Loading...'}
-            </div>
+            <label className="text-sm font-medium text-foreground">Current Payment Shares</label>
+            {paymentShares ? (
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <div className="text-lg font-bold text-blue-400">{Number(paymentShares[0]) / 100}%</div>
+                  <div className="text-xs text-muted-foreground">Manufacturer</div>
+                </div>
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <div className="text-lg font-bold text-green-400">{Number(paymentShares[1]) / 100}%</div>
+                  <div className="text-xs text-muted-foreground">RMS</div>
+                </div>
+                <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                  <div className="text-lg font-bold text-purple-400">{Number(paymentShares[2]) / 100}%</div>
+                  <div className="text-xs text-muted-foreground">Distributor</div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-muted-foreground">Loading...</div>
+            )}
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">New Return Window (Days)</label>
-            <Input
-              type="number"
-              placeholder="e.g., 7"
-              value={returnWindowDays}
-              onChange={(e) => setReturnWindowDays(e.target.value)}
-              className="w-full max-w-xs"
-            />
+          <div className="border-t border-border/60 pt-4">
+            <label className="text-sm font-medium text-foreground block mb-3">Update Payment Shares (%)</label>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground">Manufacturer</label>
+                <Input
+                  type="number"
+                  placeholder="70"
+                  value={newMfrShare}
+                  onChange={(e) => setNewMfrShare(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">RMS</label>
+                <Input
+                  type="number"
+                  placeholder="20"
+                  value={newRmsShare}
+                  onChange={(e) => setNewRmsShare(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Distributor</label>
+                <Input
+                  type="number"
+                  placeholder="10"
+                  value={newDistShare}
+                  onChange={(e) => setNewDistShare(e.target.value)}
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Total must equal 100%</p>
           </div>
           <Button
-            onClick={handleUpdateReturnWindow}
-            disabled={isUpdatingWindow || isUpdatingWindowConfirming || !returnWindowDays}
+            onClick={handleUpdatePaymentShares}
+            disabled={isUpdatingShares || isUpdatingSharesConfirming || !newMfrShare || !newRmsShare || !newDistShare}
           >
-            {isUpdatingWindow || isUpdatingWindowConfirming ? 'Updating...' : 'Update Return Window'}
+            {isUpdatingShares || isUpdatingSharesConfirming ? 'Updating...' : 'Update Payment Shares'}
           </Button>
         </CardContent>
       </Card>

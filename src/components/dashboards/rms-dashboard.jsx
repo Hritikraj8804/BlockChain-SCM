@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { showLoading, showSuccess, showError, closeAlert } from '@/lib/sweetalert';
 import { MetaverseParticles, BlockchainNode } from '@/components/3d-elements';
+import { getOrderStatusText } from '@/utils/tracking-mapper';
 
 export function RMSDashboard() {
   const { address } = useAccount();
@@ -133,15 +134,7 @@ function OrderRow({ bookingId, rmsAddress, onDispatchMaterials, isDispatching })
 
   if (!order) return null;
 
-  const statusMap = {
-    0: 'Pending',
-    1: 'Materials Requested',
-    2: 'Materials Dispatched',
-    3: 'In Production',
-    4: 'Ready For Shipping',
-    5: 'In Transit',
-    6: 'Delivered',
-  };
+  const statusText = getOrderStatusText(order.status);
 
   const canDispatch = order.status === 1 && order.rmsAssigned?.toLowerCase() === rmsAddress?.toLowerCase();
 
@@ -149,7 +142,7 @@ function OrderRow({ bookingId, rmsAddress, onDispatchMaterials, isDispatching })
     <TableRow>
       <TableCell className="font-mono">#{bookingId.toString()}</TableCell>
       <TableCell>
-        <span className="text-sm">{statusMap[order.status] || 'Unknown'}</span>
+        <span className="text-sm">{statusText}</span>
       </TableCell>
       <TableCell>
         {canDispatch ? (

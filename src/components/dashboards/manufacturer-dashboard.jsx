@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatUnits } from 'viem';
 import { showLoading, showSuccess, showError, closeAlert } from '@/lib/sweetalert';
 import { MetaverseParticles, BlockchainNode } from '@/components/3d-elements';
+import { getOrderStatusText } from '@/utils/tracking-mapper';
 
 export function ManufacturerDashboard() {
   const { address } = useAccount();
@@ -18,11 +19,13 @@ export function ManufacturerDashboard() {
   const [productDesc, setProductDesc] = useState('');
   const [productImageUri, setProductImageUri] = useState('');
   const [productPrice, setProductPrice] = useState('');
+  const [productStock, setProductStock] = useState(''); // New state for stock
   const [deliveryDays, setDeliveryDays] = useState('7'); // Default 7 days
   const [selectedRms, setSelectedRms] = useState('');
   const [suppliers, setSuppliers] = useState([]);
   const [newSupplier, setNewSupplier] = useState('');
   const [editingProductId, setEditingProductId] = useState(null);
+  const [returnWindowDays, setReturnWindowDays] = useState('');
   const queryClient = useQueryClient();
 
   // Get manufacturer orders (with auto-refresh for real-time updates)
@@ -168,6 +171,22 @@ export function ManufacturerDashboard() {
     hash: confirmReturnHash,
   });
 
+  // Return window hooks
+  const { writeContract: writeSetReturnWindow, data: setWindowHash, isPending: isSettingWindow, error: setWindowError } = useWriteContract();
+  const { isLoading: isSettingWindowConfirming, isSuccess: isSetWindowSuccess, isError: isSetWindowTxError } = useWaitForTransactionReceipt({
+    hash: setWindowHash,
+  });
+
+  const { data: currentReturnWindow, refetch: refetchReturnWindow } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getReturnWindow',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address,
+    },
+  });
+
   // SweetAlert notifications for list product
   useEffect(() => {
     if (isListing) showLoading('Listing product...', 'Adding your product to the marketplace');
@@ -183,6 +202,7 @@ export function ManufacturerDashboard() {
       setProductDesc('');
       setProductImageUri('');
       setProductPrice('');
+      setProductStock('');
       setDeliveryDays('7'); // Reset to default
       queryClient.invalidateQueries();
     }
@@ -209,6 +229,7 @@ export function ManufacturerDashboard() {
       setProductDesc('');
       setProductImageUri('');
       setProductPrice('');
+      setProductStock('');
       setEditingProductId(null);
       queryClient.invalidateQueries();
     }
@@ -355,8 +376,30 @@ export function ManufacturerDashboard() {
     }
   }, [confirmReturnError, isConfirmReturnTxError]);
 
+  // SweetAlert notifications for set return window
+  useEffect(() => {
+    if (isSettingWindow) showLoading('Setting return window...', 'Saving your return window preference');
+  }, [isSettingWindow]);
+  useEffect(() => {
+    if (isSettingWindowConfirming) showLoading('Waiting for confirmation...', 'Transaction is being confirmed');
+  }, [isSettingWindowConfirming]);
+  useEffect(() => {
+    if (isSetWindowSuccess) {
+      closeAlert();
+      showSuccess('Return window updated!', 'Your return window has been set');
+      setReturnWindowDays('');
+      refetchReturnWindow();
+    }
+  }, [isSetWindowSuccess, refetchReturnWindow]);
+  useEffect(() => {
+    if (setWindowError || isSetWindowTxError) {
+      closeAlert();
+      showError('Failed to set return window', setWindowError?.message || 'Please try again');
+    }
+  }, [setWindowError, isSetWindowTxError]);
+
   const handleListProduct = () => {
-    if (!productName || !productDesc || !productPrice) {
+    if (!productName || !productDesc || !productPrice || !productStock) {
       showError('Validation Error', 'Please fill in all required fields');
       return;
     }
@@ -379,16 +422,18 @@ export function ManufacturerDashboard() {
     const imageUri = productImageUri.trim() || ''; // Allow empty image URI
     showLoading(`Listing ${productName}...`, 'Adding product to marketplace');
 
+    const stock = BigInt(parseInt(productStock));
+
     writeListProduct({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: 'listProduct',
-      args: [productName, imageUri, productDesc, priceInWei],
+      args: [productName, imageUri, productDesc, priceInWei, stock],
     });
   };
 
   const handleUpdateProduct = () => {
-    if (!editingProductId || !productName || !productDesc || !productPrice) return;
+    if (!editingProductId || !productName || !productDesc || !productPrice || !productStock) return;
 
     // Save delivery days
     try {
@@ -399,6 +444,7 @@ export function ManufacturerDashboard() {
     } catch (_) { }
 
     const priceInWei = BigInt(Math.floor(parseFloat(productPrice) * 1e18));
+    const stock = BigInt(parseInt(productStock));
     const imageUri = productImageUri.trim() || '';
 
     showLoading(`Updating ${productName}...`, 'Saving changes to blockchain');
@@ -407,7 +453,7 @@ export function ManufacturerDashboard() {
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: 'updateProduct',
-      args: [editingProductId, productName, imageUri, productDesc, priceInWei],
+      args: [editingProductId, productName, imageUri, productDesc, priceInWei, stock],
     });
   };
 
@@ -432,6 +478,7 @@ export function ManufacturerDashboard() {
     setProductDesc(product.description);
     setProductImageUri(product.imageUri);
     setProductPrice(formatUnits(product.price, 18));
+    setProductStock(product.stock ? product.stock.toString() : '0');
     // Try to recover delivery days from local storage
     try {
       const deliveryData = JSON.parse(localStorage.getItem('product_delivery_days') || '{}');
@@ -449,6 +496,7 @@ export function ManufacturerDashboard() {
     setProductDesc('');
     setProductImageUri('');
     setProductPrice('');
+    setProductStock('');
     setDeliveryDays('7');
   };
 
@@ -480,16 +528,15 @@ export function ManufacturerDashboard() {
   };
 
   const handleApproveReturn = (returnId, pricePaid) => {
-
-    showLoading(`Approving return #${returnId}...`, 'Processing return approval and refund deposit');
+    // No longer needs to send value - refund comes from escrow held in contract
+    showLoading(`Approving return #${returnId}...`, 'Processing return approval');
     writeApproveReturn({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: 'approveReturn',
       args: [BigInt(returnId)],
-      value: BigInt(pricePaid),
+      // No value needed - escrow handles refund
     });
-
   };
 
   const handleRejectReturn = (returnId, rejectionReason) => {
@@ -513,6 +560,21 @@ export function ManufacturerDashboard() {
       abi: CONTRACT_ABI,
       functionName: 'confirmReturnReceived',
       args: [BigInt(returnId)],
+    });
+  };
+
+  const handleSetReturnWindow = () => {
+    const days = parseInt(returnWindowDays);
+    if (!days || days < 1) {
+      showError('Validation Error', 'Please enter a valid number of days (minimum 1)');
+      return;
+    }
+    const windowSeconds = BigInt(days * 86400); // Convert days to seconds
+    writeSetReturnWindow({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'setReturnWindow',
+      args: [windowSeconds],
     });
   };
 
@@ -582,6 +644,19 @@ export function ManufacturerDashboard() {
             />
           </div>
           <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Stock</label>
+            <Input
+              type="number"
+              min="0"
+              placeholder="0"
+              value={productStock}
+              onChange={(e) => setProductStock(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Initial stock level. Orders will be fulfilled from stock if available.
+            </p>
+          </div>
+          <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Estimated Delivery (Days)</label>
             <Input
               type="number"
@@ -599,7 +674,7 @@ export function ManufacturerDashboard() {
             <Button
               className="flex-1"
               onClick={editingProductId ? handleUpdateProduct : handleListProduct}
-              disabled={isListing || isListingConfirming || isUpdating || isUpdateConfirming || !productName || !productDesc || !productPrice}
+              disabled={isListing || isListingConfirming || isUpdating || isUpdateConfirming || !productName || !productDesc || !productPrice || !productStock}
             >
               {editingProductId
                 ? (isUpdating || isUpdateConfirming ? 'Updating...' : 'Update Product')
@@ -612,6 +687,45 @@ export function ManufacturerDashboard() {
               </Button>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="border-b border-border/60 bg-card/30">
+          <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Return Window Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Current Return Window</label>
+            <div className="text-lg font-semibold text-foreground">
+              {currentReturnWindow ? `${Number(currentReturnWindow) / 86400} days` : 'Loading...'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Consumers can return products within this period after delivery.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">New Return Window (Days)</label>
+            <Input
+              type="number"
+              placeholder="e.g., 7"
+              min="1"
+              value={returnWindowDays}
+              onChange={(e) => setReturnWindowDays(e.target.value)}
+              className="w-full max-w-xs"
+            />
+          </div>
+          <Button
+            onClick={handleSetReturnWindow}
+            disabled={isSettingWindow || isSettingWindowConfirming || !returnWindowDays}
+          >
+            {isSettingWindow || isSettingWindowConfirming ? 'Updating...' : 'Update Return Window'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -679,6 +793,17 @@ export function ManufacturerDashboard() {
                         <span className="font-mono text-sm font-medium">
                           {formatUnits(product.price, 18)} ETH
                         </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${product.stock && Number(product.stock) <= 3
+                          ? 'bg-red-500/20 text-red-400'
+                          : 'bg-green-500/20 text-green-400'
+                          }`}>
+                          {product.stock ? Number(product.stock) : 0} in stock
+                        </span>
+                        {product.stock && Number(product.stock) <= 3 && (
+                          <span className="text-xs text-red-400 font-bold animate-pulse">Low Stock!</span>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                         {product.description}
@@ -791,7 +916,7 @@ export function ManufacturerDashboard() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </div >
   );
 }
 
@@ -833,21 +958,13 @@ function OrderRow({
   // Debug: Log order status and return request
   console.log(`Order #${bookingId} - Status: ${order?.status}, Return Request:`, returnRequest, 'Error:', returnError, returnFetchError);
 
+
+
+  // ... (in OrderRow)
   if (!order) return null;
 
-  const statusMap = {
-    0: 'Pending',
-    1: 'Materials Requested',
-    2: 'Materials Dispatched',
-    3: 'In Production',
-    4: 'Ready For Shipping',
-    5: 'In Transit',
-    6: 'Delivered',
-    7: 'Return Requested',
-    8: 'Return In Transit',
-    9: 'Return Received',
-    10: 'Refunded',
-  };
+  // Use the mapper instead of local statusMap
+  const statusText = getOrderStatusText(order.status);
 
   const handleReject = () => {
     if (!rejectionReason.trim()) {
@@ -866,7 +983,7 @@ function OrderRow({
       <TableRow>
         <TableCell className="font-mono">#{bookingId.toString()}</TableCell>
         <TableCell>
-          <span className="text-sm">{statusMap[order.status] || 'Unknown'}</span>
+          <span className="text-sm">{statusText}</span>
         </TableCell>
         <TableCell>
           <div className="flex gap-2 flex-wrap">
