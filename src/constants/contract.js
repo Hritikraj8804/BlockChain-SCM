@@ -1,6 +1,6 @@
 // Contract ABI and Address
 // Replace CONTRACT_ADDRESS with your deployed contract address
-export const CONTRACT_ADDRESS = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"; // TODO: Replace with actual address
+export const CONTRACT_ADDRESS = "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"; // Deployed with 2 min return window for testing
 
 export const CONTRACT_ABI = [
 	{
@@ -2036,6 +2036,19 @@ export const CONTRACT_ABI = [
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_bookingId",
+				"type": "uint256"
+			}
+		],
+		"name": "shipOrder",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	}
 ]

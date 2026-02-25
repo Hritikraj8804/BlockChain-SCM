@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -171,6 +171,11 @@ export function ManufacturerDashboard() {
     hash: confirmReturnHash,
   });
 
+  const { writeContract: writeShipOrder, data: shipHash, isPending: isShipping, error: shipError } = useWriteContract();
+  const { isLoading: isShipConfirming, isSuccess: isShipSuccess, isError: isShipTxError } = useWaitForTransactionReceipt({
+    hash: shipHash,
+  });
+
   // Return window hooks
   const { writeContract: writeSetReturnWindow, data: setWindowHash, isPending: isSettingWindow, error: setWindowError } = useWriteContract();
   const { isLoading: isSettingWindowConfirming, isSuccess: isSetWindowSuccess, isError: isSetWindowTxError } = useWaitForTransactionReceipt({
@@ -186,6 +191,34 @@ export function ManufacturerDashboard() {
       enabled: !!address,
     },
   });
+
+  // Release Escrow Hook
+  const { writeContract: writeReleaseEscrow, data: releaseHash, isPending: isReleasing, error: releaseError } = useWriteContract();
+  const { isLoading: isReleaseConfirming, isSuccess: isReleaseSuccess, isError: isReleaseTxError } = useWaitForTransactionReceipt({
+    hash: releaseHash,
+  });
+
+  // SweetAlert notifications for release escrow
+  useEffect(() => {
+    if (isReleasing) showLoading('Releasing Escrow...', 'Processing payment release');
+  }, [isReleasing]);
+  useEffect(() => {
+    if (isReleaseConfirming) showLoading('Confirming Release...', 'Transaction is being confirmed');
+  }, [isReleaseConfirming]);
+  useEffect(() => {
+    if (isReleaseSuccess) {
+      closeAlert();
+      showSuccess('Payment Released!', 'Funds have been distributed to all parties');
+      queryClient.invalidateQueries();
+      refetchOrders();
+    }
+  }, [isReleaseSuccess, queryClient, refetchOrders]);
+  useEffect(() => {
+    if (releaseError || isReleaseTxError) {
+      closeAlert();
+      showError('Release Failed', releaseError?.message || 'Please try again');
+    }
+  }, [releaseError, isReleaseTxError]);
 
   // SweetAlert notifications for list product
   useEffect(() => {
@@ -376,6 +409,28 @@ export function ManufacturerDashboard() {
     }
   }, [confirmReturnError, isConfirmReturnTxError]);
 
+  // SweetAlert notifications for ship order
+  useEffect(() => {
+    if (isShipping) showLoading('Assigning distributor...', 'Processing delivery assignment');
+  }, [isShipping]);
+  useEffect(() => {
+    if (isShipConfirming) showLoading('Waiting for confirmation...', 'Transaction is being confirmed');
+  }, [isShipConfirming]);
+  useEffect(() => {
+    if (isShipSuccess) {
+      closeAlert();
+      showSuccess('Order Shipped!', 'Distributor assigned successfully');
+      queryClient.invalidateQueries();
+      refetchOrders();
+    }
+  }, [isShipSuccess, queryClient, refetchOrders]);
+  useEffect(() => {
+    if (shipError || isShipTxError) {
+      closeAlert();
+      showError('Failed to ship order', shipError?.message || 'Please try again');
+    }
+  }, [shipError, isShipTxError]);
+
   // SweetAlert notifications for set return window
   useEffect(() => {
     if (isSettingWindow) showLoading('Setting return window...', 'Saving your return window preference');
@@ -424,6 +479,14 @@ export function ManufacturerDashboard() {
 
     const stock = BigInt(parseInt(productStock));
 
+    console.log('List Product Args:', {
+      productName,
+      imageUri,
+      productDesc,
+      priceInWei: priceInWei.toString(),
+      stock: stock.toString()
+    });
+
     writeListProduct({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
@@ -448,6 +511,15 @@ export function ManufacturerDashboard() {
     const imageUri = productImageUri.trim() || '';
 
     showLoading(`Updating ${productName}...`, 'Saving changes to blockchain');
+
+    console.log('Update Product Args:', {
+      editingProductId,
+      productName,
+      imageUri,
+      productDesc,
+      priceInWei: priceInWei.toString(),
+      stock: stock.toString()
+    });
 
     writeUpdateProduct({
       address: CONTRACT_ADDRESS,
@@ -563,18 +635,57 @@ export function ManufacturerDashboard() {
     });
   };
 
+  const handleShipOrder = (bookingId) => {
+    showLoading(`Assigning delivery for order #${bookingId}...`, 'Assigning a distributor');
+    writeShipOrder({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'shipOrder',
+      args: [BigInt(bookingId)],
+    });
+  };
+
   const handleSetReturnWindow = () => {
-    const days = parseInt(returnWindowDays);
-    if (!days || days < 1) {
-      showError('Validation Error', 'Please enter a valid number of days (minimum 1)');
+    const minutes = parseFloat(returnWindowDays);
+    if (!minutes || minutes <= 0) {
+      showError('Validation Error', 'Please enter a valid number of minutes (greater than 0)');
       return;
     }
-    const windowSeconds = BigInt(days * 86400); // Convert days to seconds
+    const windowSeconds = BigInt(Math.floor(minutes * 60)); // Convert minutes to seconds
     writeSetReturnWindow({
       address: CONTRACT_ADDRESS,
       abi: CONTRACT_ABI,
       functionName: 'setReturnWindow',
       args: [windowSeconds],
+    });
+  };
+
+  // Helper to format seconds into human-readable text
+  const formatReturnWindow = (seconds) => {
+    const secs = Number(seconds);
+    if (secs >= 86400) {
+      const days = secs / 86400;
+      return days === 1 ? '1 day' : `${days} days`;
+    } else if (secs >= 3600) {
+      const hours = Math.floor(secs / 3600);
+      const mins = Math.floor((secs % 3600) / 60);
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours} hour${hours > 1 ? 's' : ''}`;
+    } else if (secs >= 60) {
+      const mins = Math.floor(secs / 60);
+      const remainSecs = secs % 60;
+      return remainSecs > 0 ? `${mins}m ${remainSecs}s` : `${mins} minute${mins > 1 ? 's' : ''}`;
+    } else {
+      return `${secs} second${secs !== 1 ? 's' : ''}`;
+    }
+  };
+
+  const handleReleaseEscrow = (bookingId) => {
+    showLoading(`Releasing payment for order #${bookingId}...`, 'Distributing funds');
+    writeReleaseEscrow({
+      address: CONTRACT_ADDRESS,
+      abi: CONTRACT_ABI,
+      functionName: 'releaseEscrow',
+      args: [BigInt(bookingId)],
     });
   };
 
@@ -703,22 +814,26 @@ export function ManufacturerDashboard() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Current Return Window</label>
             <div className="text-lg font-semibold text-foreground">
-              {currentReturnWindow ? `${Number(currentReturnWindow) / 86400} days` : 'Loading...'}
+              {currentReturnWindow ? formatReturnWindow(currentReturnWindow) : 'Loading...'}
             </div>
             <p className="text-xs text-muted-foreground">
               Consumers can return products within this period after delivery.
             </p>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">New Return Window (Days)</label>
+            <label className="text-sm font-medium text-foreground">New Return Window (Minutes)</label>
             <Input
               type="number"
-              placeholder="e.g., 7"
-              min="1"
+              placeholder="e.g., 2 for 2 minutes, 10080 for 7 days"
+              step="any"
+              min="0"
               value={returnWindowDays}
               onChange={(e) => setReturnWindowDays(e.target.value)}
               className="w-full max-w-xs"
             />
+            <p className="text-xs text-muted-foreground">
+              Enter time in minutes (e.g., 2 = 2 min, 60 = 1 hour, 10080 = 7 days)
+            </p>
           </div>
           <Button
             onClick={handleSetReturnWindow}
@@ -790,7 +905,7 @@ export function ManufacturerDashboard() {
                     <div className="p-4 space-y-2">
                       <div className="flex justify-between items-start">
                         <h3 className="font-semibold truncate pr-2">{product.name}</h3>
-                        <span className="font-mono text-sm font-medium">
+                        <span className="font-mono text-sm font-medium text-price">
                           {formatUnits(product.price, 18)} ETH
                         </span>
                       </div>
@@ -898,12 +1013,17 @@ export function ManufacturerDashboard() {
                       onApproveReturn={handleApproveReturn}
                       onRejectReturn={handleRejectReturn}
                       onConfirmReturnReceived={handleConfirmReturnReceived}
+                      onShipOrder={handleShipOrder}
+                      onReleaseEscrow={handleReleaseEscrow}
+                      currentReturnWindow={currentReturnWindow}
                       selectedRms={selectedRms}
                       isRequesting={isRequesting || isRequestConfirming}
                       isCompleting={isCompleting || isCompleteConfirming}
                       isApproving={isApproving || isApproveConfirming}
                       isRejecting={isRejecting || isRejectConfirming}
                       isConfirmingReturn={isConfirmingReturn || isConfirmReturnConfirming}
+                      isShipping={isShipping || isShipConfirming}
+                      isReleasing={isReleasing || isReleaseConfirming}
                     />
                   ))}
                 </TableBody>
@@ -927,21 +1047,31 @@ function OrderRow({
   onApproveReturn,
   onRejectReturn,
   onConfirmReturnReceived,
+  onShipOrder,
   selectedRms,
   isRequesting,
   isCompleting,
   isApproving,
   isRejecting,
   isConfirmingReturn,
+  isShipping,
+  onReleaseEscrow,
+  currentReturnWindow,
+  isReleasing,
 }) {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [countdown, setCountdown] = useState(null);
+  const autoReleaseTriggered = useRef(false);
 
-  const { data: order } = useReadContract({
+  const { data: order, refetch: refetchOrder } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: 'getOrder',
     args: [BigInt(bookingId)],
+    query: {
+      refetchInterval: 5000, // Poll for order updates
+    },
   });
 
   const { data: returnRequest, isError: returnError, error: returnFetchError } = useReadContract({
@@ -951,16 +1081,60 @@ function OrderRow({
     args: [BigInt(bookingId)],
     query: {
       enabled: !!order && (order.status === 7 || order.status === 8 || order.status === 9),
-      refetchInterval: 5000, // Poll for return request updates
+      refetchInterval: 5000,
     },
   });
 
   // Debug: Log order status and return request
   console.log(`Order #${bookingId} - Status: ${order?.status}, Return Request:`, returnRequest, 'Error:', returnError, returnFetchError);
 
+  // Auto-release escrow when return window expires
+  useEffect(() => {
+    if (!order || order.status !== 6 || order.fundsReleased || autoReleaseTriggered.current || isReleasing) return;
 
+    const deliveredAt = Number(order.deliveredAt);
+    const windowSeconds = currentReturnWindow ? Number(currentReturnWindow) : 120; // Default 2 min for testing
+    const deadline = deliveredAt + windowSeconds;
+    const now = Math.floor(Date.now() / 1000);
 
-  // ... (in OrderRow)
+    if (now >= deadline) {
+      // Window already expired — auto-release immediately
+      autoReleaseTriggered.current = true;
+      console.log(`Order #${bookingId}: Auto-releasing escrow (window expired)`);
+      onReleaseEscrow(bookingId);
+    } else {
+      // Set a countdown timer
+      const timeLeftMs = (deadline - now) * 1000;
+      setCountdown(deadline - now);
+
+      // Update countdown every second
+      const countdownInterval = setInterval(() => {
+        const remaining = deadline - Math.floor(Date.now() / 1000);
+        if (remaining <= 0) {
+          setCountdown(0);
+          clearInterval(countdownInterval);
+          // Auto-release when countdown hits 0
+          if (!autoReleaseTriggered.current) {
+            autoReleaseTriggered.current = true;
+            console.log(`Order #${bookingId}: Auto-releasing escrow (countdown complete)`);
+            onReleaseEscrow(bookingId);
+          }
+        } else {
+          setCountdown(remaining);
+        }
+      }, 1000);
+
+      return () => clearInterval(countdownInterval);
+    }
+  }, [order, currentReturnWindow, bookingId, onReleaseEscrow, isReleasing]);
+
+  // Reset auto-release flag when order data changes (e.g., new order)
+  useEffect(() => {
+    if (order && order.fundsReleased) {
+      autoReleaseTriggered.current = false;
+    }
+  }, [order?.fundsReleased]);
+
   if (!order) return null;
 
   // Use the mapper instead of local statusMap
@@ -976,6 +1150,15 @@ function OrderRow({
       setShowRejectModal(false);
       setRejectionReason('');
     }
+  };
+
+  // Format countdown for display
+  const formatCountdown = (secs) => {
+    if (secs <= 0) return 'Releasing...';
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
   };
 
   return (
@@ -994,6 +1177,16 @@ function OrderRow({
                 disabled={isRequesting || !selectedRms}
               >
                 Request Materials
+              </Button>
+            )}
+            {order.status === 4 && (
+              <Button
+                size="sm"
+                onClick={() => onShipOrder(bookingId)}
+                disabled={isShipping}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Assign for Delivery
               </Button>
             )}
             {order.status === 2 && (
@@ -1038,6 +1231,44 @@ function OrderRow({
               >
                 Confirm Return Received
               </Button>
+            )}
+
+            {/* Auto-Release Payment with Countdown */}
+            {order.status === 6 && !order.fundsReleased && (
+              <div className="flex flex-col items-start gap-1">
+                {countdown !== null && countdown > 0 ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse">
+                        ⏳ Auto-release in {formatCountdown(countdown)}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground ml-1">
+                      Escrow locked — payment will auto-release when window expires
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      size="sm"
+                      onClick={() => onReleaseEscrow(bookingId)}
+                      disabled={isReleasing}
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      {isReleasing ? 'Releasing...' : '✅ Release Payment Now'}
+                    </Button>
+                    <span className="text-[10px] text-emerald-400 ml-1">
+                      Return window expired — ready to release
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+
+            {order.fundsReleased && (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20">
+                Paid
+              </span>
             )}
           </div>
         </TableCell>

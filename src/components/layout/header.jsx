@@ -9,24 +9,24 @@ export function Header() {
   const { disconnect } = useDisconnect();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/60 bg-header text-white">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md text-foreground">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-lg bg-white/10 border border-white/20 text-white flex items-center justify-center shadow-sm">
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-secondary border-primary/20 text-primary-foreground flex items-center justify-center">
               <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6h15l-1.5 9h-13zM6 6l-2 0M9 20a1 1 0 100-2 1 1 0 000 2zm9 0a1 1 0 100-2 1 1 0 000 2z" />
               </svg>
             </div>
             <div className="min-w-0">
-              <h1 className="text-sm font-semibold text-white truncate">AI Supply Chain Commerce</h1>
-              <p className="text-xs text-white/70 truncate">Professional ecommerce + logistics dashboard</p>
+              <h1 className="text-sm font-semibold text-foreground truncate">AI Supply Chain Commerce</h1>
+              <p className="text-xs text-muted-foreground truncate">Professional ecommerce + logistics dashboard</p>
             </div>
           </div>
 
           {isConnected && role && (
-            <div className="hidden sm:flex items-center gap-2 rounded-full border border-border/60 bg-card/40 px-3 py-1 text-xs text-muted-foreground">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <div className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-card/40 px-3 py-1 text-xs text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-accent" />
               <span className="truncate">Role: <span className="text-foreground font-medium">{role}</span></span>
               {address && (
                 <span className="hidden md:inline text-muted-foreground">
@@ -48,13 +48,13 @@ export function Header() {
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
-                      className="rounded-full border border-white/20 bg-white/10 hover:bg-white/20 text-white px-4 h-9"
+                      className="rounded-full border-luxury/40 bg-charcoal/60 hover:bg-charcoal/80 text-foreground px-4 h-9"
                     >
                       {account.displayName}
                     </Button>
                     <Button
                       onClick={() => disconnect()}
-                      className="h-9 px-3 rounded-full bg-primary hover:bg-secondary text-primary-foreground"
+                      className="h-9 px-3 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary text-primary-foreground"
                       title="Disconnect wallet"
                     >
                       Logout
@@ -63,7 +63,7 @@ export function Header() {
                 ) : (
                   <Button
                     onClick={openConnectModal}
-                    className="rounded-full h-9 px-5 font-medium bg-primary hover:bg-secondary text-primary-foreground"
+                    className="rounded-full h-9 px-5 font-medium bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary text-primary-foreground"
                   >
                     Connect Wallet
                   </Button>

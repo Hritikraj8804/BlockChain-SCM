@@ -287,9 +287,9 @@ export function AIOrderSummary({ bookingId }) {
 
   if (isLoading) {
     return (
-      <Card className="shadow-glow border-blue-500/20 bg-slate-800/80 backdrop-blur-sm">
+      <Card className="shadow-lg border-primary/20 bg-card/80 backdrop-blur-sm">
         <CardContent className="p-6">
-          <div className="text-center text-gray-300">Loading tracking information...</div>
+          <div className="text-center text-muted-foreground">Loading tracking information...</div>
         </CardContent>
       </Card>
     );
@@ -297,19 +297,19 @@ export function AIOrderSummary({ bookingId }) {
 
   if (!history || history.length === 0) {
     return (
-      <Card className="shadow-glow border-blue-500/20 bg-slate-800/80 backdrop-blur-sm">
+      <Card className="shadow-lg border-primary/20 bg-card/80 backdrop-blur-sm">
         <CardContent className="p-6">
-          <div className="text-center text-gray-300">No tracking information available for this order.</div>
+          <div className="text-center text-muted-foreground">No tracking information available for this order.</div>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="shadow-glow border-blue-100/50 bg-white/80 backdrop-blur-sm">
-      <CardHeader className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-b border-blue-500/20">
+    <Card className="shadow-lg border-primary/20 bg-card/80 backdrop-blur-sm">
+      <CardHeader className="bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-primary/20">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold text-blue-300 flex items-center gap-2">
+          <CardTitle className="text-xl font-bold text-primary flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
@@ -348,7 +348,7 @@ export function AIOrderSummary({ bookingId }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
-              className="rounded-xl bg-gradient-to-br from-blue-900/30 via-purple-900/30 to-pink-900/30 p-6 border-2 border-blue-500/30 shadow-lg relative overflow-hidden"
+              className="rounded-xl bg-gradient-to-br from-primary/10 via-secondary/10 to-accent/10 p-6 border-2 border-primary/30 shadow-lg relative overflow-hidden"
             >
               {/* Animated background gradient */}
               <motion.div
@@ -368,7 +368,7 @@ export function AIOrderSummary({ bookingId }) {
                 {[...Array(6)].map((_, i) => (
                   <motion.div
                     key={i}
-                    className="absolute w-2 h-2 bg-blue-400 rounded-full"
+                    className="absolute w-2 h-2 bg-primary rounded-full"
                     style={{
                       left: `${20 + i * 15}%`,
                       top: `${10 + (i % 3) * 30}%`,
@@ -408,7 +408,7 @@ export function AIOrderSummary({ bookingId }) {
                   </motion.div>
                   <div className="flex-1">
                     <motion.h3
-                      className="font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 mb-2 flex items-center gap-2"
+                      className="font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary mb-2 flex items-center gap-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -485,7 +485,7 @@ export function AIOrderSummary({ bookingId }) {
                             className="flex items-start gap-3 group"
                           >
                             <motion.div
-                              className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md"
+                              className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md"
                               whileHover={{ scale: 1.2, rotate: 180 }}
                               transition={{ type: "spring", stiffness: 300 }}
                             >
@@ -571,8 +571,8 @@ export function AIOrderSummary({ bookingId }) {
           </motion.div>
         )}
 
-        <div className="bg-slate-800/50 rounded-lg p-6 border border-blue-500/30">
-          <h3 className="font-bold mb-6 text-blue-200 text-lg flex items-center gap-2">
+        <div className="bg-card/50 rounded-lg p-6 border border-primary/30">
+          <h3 className="font-bold mb-6 text-primary text-lg flex items-center gap-2">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -584,11 +584,11 @@ export function AIOrderSummary({ bookingId }) {
                 <TimelineIndicator />
                 {index < history.length - 1 && <TimelineConnector />}
                 <TimelineContent>
-                  <div className="space-y-2 bg-slate-700/40 rounded-lg p-4 border border-blue-500/20">
-                    <div className="font-bold text-white text-lg leading-tight">
+                  <div className="space-y-2 bg-muted/40 rounded-lg p-4 border border-primary/20">
+                    <div className="font-bold text-foreground text-lg leading-tight">
                       {getTrackingStatusText(point.status)}
                     </div>
-                    <div className="text-base text-gray-50 font-medium">
+                    <div className="text-base text-muted-foreground font-medium">
                       {getActorRoleText(point.role, point.status)} • {new Date(Number(point.timestamp) * 1000).toLocaleString()}
                     </div>
                     {index > 0 && (

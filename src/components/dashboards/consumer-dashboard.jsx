@@ -227,11 +227,11 @@ export function ConsumerDashboard() {
                       {/* Stock Status Badge */}
                       <div className="mt-1">
                         {product.stock && Number(product.stock) > 0 ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20">
                             {product.stock.toString()} in stock
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 text-amber-500 border border-amber-500/20">
                             Made to Order
                           </span>
                         )}
@@ -300,7 +300,7 @@ export function ConsumerDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="text-center text-gray-400 py-8">
+          <div className="text-center text-muted-foreground py-8">
             You haven't placed any orders yet.
           </div>
         )}
@@ -346,6 +346,7 @@ function OrderRow({ bookingId, selectedOrder, setSelectedOrder, onRequestReturn 
     args: [BigInt(bookingId)],
     query: {
       enabled: !!order && order.status === 6, // Only check if delivered
+      refetchInterval: 10000, // Check every 10s
     },
   });
 
@@ -356,24 +357,57 @@ function OrderRow({ bookingId, selectedOrder, setSelectedOrder, onRequestReturn 
     args: [BigInt(bookingId)],
     query: {
       enabled: !!order && order.status === 6,
+      refetchInterval: 10000,
     },
   });
 
-  if (!order) return null;
+  const { data: returnWindow } = useReadContract({
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
+    functionName: 'getReturnWindow',
+    args: order ? [order.manufacturer] : undefined,
+    query: {
+      enabled: !!order,
+    },
+  });
 
+  const [isExpiredLocal, setIsExpiredLocal] = useState(false);
 
+  useEffect(() => {
+    if (!order || !order.deliveredAt || returnWindow === undefined) return;
 
-  // ... (inside OrderRow)
+    const checkExpiration = () => {
+      const deliveredAt = Number(order.deliveredAt);
+      const window = Number(returnWindow);
+      const nowSeconds = Math.floor(Date.now() / 1000);
+
+      // Check if expired locally
+      const isExpired = nowSeconds >= deliveredAt + window;
+      setIsExpiredLocal(isExpired);
+    };
+
+    checkExpiration(); // Initial check
+    const interval = setInterval(checkExpiration, 1000);
+    return () => clearInterval(interval);
+  }, [order, returnWindow]);
+
   if (!order) return null;
 
   const statusText = getOrderStatusText(order.status);
 
   const formatTime = (seconds) => {
+    // If expired locally, show Expired immediately
+    if (isExpiredLocal) return 'Expired';
+
     if (!seconds || Number(seconds) === 0) return 'Expired';
-    const days = Math.floor(Number(seconds) / 86400);
-    const hours = Math.floor((Number(seconds) % 86400) / 3600);
+    const totalSeconds = Number(seconds);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+
     if (days > 0) return `${days}d ${hours}h left`;
-    return `${hours}h left`;
+    if (hours > 0) return `${hours}h ${minutes}m left`;
+    return `${minutes}m left`;
   };
 
   return (
@@ -382,8 +416,8 @@ function OrderRow({ bookingId, selectedOrder, setSelectedOrder, onRequestReturn 
       <TableCell>
         <div className="flex flex-col gap-1">
           <span className="text-sm font-medium">{statusText}</span>
-          {order.status === 6 && remainingTime && (
-            <span className="text-xs text-gray-400">
+          {order.status === 6 && (
+            <span className="text-xs text-muted-foreground">
               Return window: {formatTime(remainingTime)}
             </span>
           )}
@@ -413,7 +447,7 @@ function OrderRow({ bookingId, selectedOrder, setSelectedOrder, onRequestReturn 
               </>
             )}
           </Button>
-          {order.status === 6 && isEligible && (
+          {order.status === 6 && isEligible && !isExpiredLocal && (
             <Button
               size="sm"
               variant="outline"

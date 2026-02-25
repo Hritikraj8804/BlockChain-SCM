@@ -210,9 +210,10 @@ export function ConnectWalletLanding() {
                               className="rounded-full h-10 px-6 font-medium text-foreground"
                               style={{
                                 background:
-                                  'linear-gradient(135deg, hsla(210,20%,30%,0.6), hsla(265,18%,40%,0.6))',
-                                border: '1px solid hsl(var(--border))',
-                                boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                                  'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))',
+                                color: 'hsl(var(--primary-foreground))',
+                                border: '1px solid hsl(var(--primary))',
+                                boxShadow: '0 4px 14px 0 rgba(6, 182, 212, 0.35)',
                               }}
                             >
                               Connect Wallet
