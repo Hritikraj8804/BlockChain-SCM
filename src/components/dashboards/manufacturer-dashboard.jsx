@@ -882,20 +882,7 @@ export function ManufacturerDashboard() {
                         </div>
                       )}
                       <div className="absolute top-2 right-2 flex gap-1">
-                        <Button
-                          size="icon"
-                          variant="secondary"
-                          className="h-8 w-8 bg-background/80 backdrop-blur-sm hover:bg-background"
-                          onClick={() => {
-                            setSelectedProductForQr(product);
-                            setQrModalOpen(true);
-                          }}
-                          title="View QR Code"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h.01M8 20h4M4 12v4m0-8h1m11-4h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5a1 1 0 011-1zM4 5h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM15 5h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V6a1 1 0 011-1zM4 16h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zM15 16h4M15 20h4M19 16v4" />
-                          </svg>
-                        </Button>
+
                         <Button
                           size="icon"
                           variant="secondary"
