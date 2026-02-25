@@ -252,7 +252,7 @@ function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmR
             </Button>
           )}
           {!canDeliver && !canPickupReturn && (
-            <span className="text-xs text-gray-400">No action available</span>
+            <span className="text-xs text-muted-foreground">No action available</span>
           )}
         </div>
       </TableCell>

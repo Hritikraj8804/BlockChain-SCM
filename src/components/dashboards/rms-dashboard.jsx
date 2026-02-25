@@ -154,7 +154,7 @@ function OrderRow({ bookingId, rmsAddress, onDispatchMaterials, isDispatching })
             {isDispatching ? 'Dispatching...' : 'Dispatch Materials'}
           </Button>
         ) : (
-          <span className="text-xs text-gray-400">No action available</span>
+          <span className="text-xs text-muted-foreground">No action available</span>
         )}
       </TableCell>
     </TableRow>

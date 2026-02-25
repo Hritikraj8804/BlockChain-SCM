@@ -500,9 +500,8 @@ export function OwnerDashboard() {
       </Card>
 
 
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="h-full col-span-1 lg:col-span-2">
           <CardHeader className="border-b border-border/60 bg-card/30">
             <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
               <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -511,81 +510,89 @@ export function OwnerDashboard() {
               Network Directory
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="p-4 space-y-6">
-              <div>
-                <h3 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wider">Manufacturers</h3>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Manufacturers Dropdown */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground flex items-center justify-between">
+                  <span>Manufacturers</span>
+                  <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">{manufacturerPool?.length || 0}</span>
+                </label>
                 {manufacturerPool && manufacturerPool.length > 0 ? (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableBody>
-                        {manufacturerPool.map((address, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-mono text-xs py-2">{address}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <Select className="w-full">
+                    {manufacturerPool.map((address, index) => (
+                      <option key={index} value={address}>
+                        {address}
+                      </option>
+                    ))}
+                  </Select>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No manufacturers active.</p>
+                  <div className="text-sm text-muted-foreground italic p-2 border border-dashed border-border rounded-md bg-muted/20">
+                    No manufacturers active
+                  </div>
                 )}
               </div>
 
-              <div>
-                <h3 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wider">Distributors</h3>
+              {/* Distributors Dropdown */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground flex items-center justify-between">
+                  <span>Distributors</span>
+                  <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">{distributorPool?.length || 0}</span>
+                </label>
                 {distributorPool && distributorPool.length > 0 ? (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableBody>
-                        {distributorPool.map((address, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-mono text-xs py-2">{address}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <Select className="w-full">
+                    {distributorPool.map((address, index) => (
+                      <option key={index} value={address}>
+                        {address}
+                      </option>
+                    ))}
+                  </Select>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No distributors active.</p>
+                  <div className="text-sm text-muted-foreground italic p-2 border border-dashed border-border rounded-md bg-muted/20">
+                    No distributors active
+                  </div>
                 )}
               </div>
 
-              <div>
-                <h3 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wider">Raw Material Suppliers</h3>
+              {/* RMS Dropdown */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground flex items-center justify-between">
+                  <span>Raw Material Suppliers</span>
+                  <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">{rmsPool?.length || 0}</span>
+                </label>
                 {rmsPool && rmsPool.length > 0 ? (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableBody>
-                        {rmsPool.map((address, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-mono text-xs py-2">{address}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <Select className="w-full">
+                    {rmsPool.map((address, index) => (
+                      <option key={index} value={address}>
+                        {address}
+                      </option>
+                    ))}
+                  </Select>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No RMS active.</p>
+                  <div className="text-sm text-muted-foreground italic p-2 border border-dashed border-border rounded-md bg-muted/20">
+                    No RMS active
+                  </div>
                 )}
               </div>
 
-              <div>
-                <h3 className="text-sm font-medium mb-3 text-muted-foreground uppercase tracking-wider">Consumers</h3>
+              {/* Consumers Dropdown */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground flex items-center justify-between">
+                  <span>Consumers</span>
+                  <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">{consumerPool?.length || 0}</span>
+                </label>
                 {consumerPool && consumerPool.length > 0 ? (
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableBody>
-                        {consumerPool.map((address, index) => (
-                          <TableRow key={index}>
-                            <TableCell className="font-mono text-xs py-2">{address}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <Select className="w-full">
+                    {consumerPool.map((address, index) => (
+                      <option key={index} value={address}>
+                        {address}
+                      </option>
+                    ))}
+                  </Select>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No consumers registered.</p>
+                  <div className="text-sm text-muted-foreground italic p-2 border border-dashed border-border rounded-md bg-muted/20">
+                    No consumers registered
+                  </div>
                 )}
               </div>
             </div>
@@ -617,7 +624,7 @@ export function OwnerDashboard() {
                       <TableRow key={product.productId.toString()}>
                         <TableCell className="font-mono">#{product.productId.toString()}</TableCell>
                         <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell className="text-right">{formatEther(product.price)} ETH</TableCell>
+                        <TableCell className="text-right font-medium text-price">{formatEther(product.price)} ETH</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -715,7 +722,7 @@ function OrderRow({ bookingId, onTrack, isSelected }) {
       { label: 'Refunded', color: 'bg-slate-500/10 text-slate-500 border-slate-500/20' },
     ];
 
-    const s = statusMap[status] || { label: 'Unknown', color: 'bg-gray-500/10 text-gray-500' };
+    const s = statusMap[status] || { label: 'Unknown', color: 'bg-muted/10 text-muted-foreground' };
     return (
       <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${s.color}`}>
         {s.label}
@@ -738,7 +745,7 @@ function OrderRow({ bookingId, onTrack, isSelected }) {
         <div className="font-mono text-xs text-muted-foreground truncate max-w-[120px]" title={order.consumer}>{order.consumer}</div>
       </TableCell>
       <TableCell>{getStatusBadge(order.status)}</TableCell>
-      <TableCell className="text-right font-medium">{order ? formatEther(order.pricePaid) : '0'} ETH</TableCell>
+      <TableCell className="text-right font-medium text-price">{order ? formatEther(order.pricePaid) : '0'} ETH</TableCell>
       <TableCell className="text-center">
         <Button
           size="sm"

@@ -6,14 +6,14 @@ const Button = React.forwardRef(
     return (
       <button
         className={cn(
-          "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
           {
-            "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm": variant === "default",
-            "bg-destructive text-destructive-foreground hover:bg-destructive/90": variant === "destructive",
-            "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground": variant === "outline",
-            "bg-secondary text-secondary-foreground hover:bg-secondary/80": variant === "secondary",
-            "hover:bg-accent hover:text-accent-foreground": variant === "ghost",
-            "text-primary underline-offset-4 hover:underline": variant === "link",
+            "bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:from-secondary hover:to-primary": variant === "default",
+            "bg-gradient-to-r from-destructive to-destructive/80 text-destructive-foreground hover:from-destructive/90 hover:to-destructive": variant === "destructive",
+            "border border-luxury bg-charcoal text-foreground hover:bg-card/80 hover:border-accent/60": variant === "outline",
+            "bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground hover:from-secondary/90 hover:to-secondary": variant === "secondary",
+            "bg-transparent hover:bg-accent/20 text-foreground hover:text-accent": variant === "ghost",
+            "text-accent underline-offset-4 hover:underline hover:text-accent/80": variant === "link",
           },
           {
             "h-10 px-4 py-2": size === "default",

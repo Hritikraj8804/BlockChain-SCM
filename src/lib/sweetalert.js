@@ -51,7 +51,7 @@ export const showLoading = (title, message = '') => {
     didOpen: () => {
       Swal.showLoading();
     },
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'linear-gradient(135deg, #1f2a38 0%, #1f2a38 100%)',
     color: '#ffffff',
     customClass: {
       popup: 'sweet-popup',

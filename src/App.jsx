@@ -94,10 +94,10 @@ function App() {
 
     if (isLoading) {
       return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
           <div className="text-center">
-            <div className="text-lg font-semibold mb-2 text-gray-200">Loading...</div>
-            <div className="text-sm text-gray-400">Determining your role...</div>
+            <div className="text-lg font-semibold mb-2 text-foreground">Loading...</div>
+            <div className="text-sm text-muted-foreground">Determining your role...</div>
           </div>
         </div>
       );
@@ -119,17 +119,17 @@ function App() {
         return <DistributorDashboard />;
       default:
         return (
-          <div className="flex items-center justify-center min-h-screen">
-            <Card className="bg-slate-800 border-blue-500/20">
+          <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+            <Card className="bg-gradient-to-br from-card to-muted/30 border-luxury">
               <CardContent className="p-8 text-center">
-                <h2 className="text-2xl font-semibold mb-4 text-gray-200">No Role Assigned</h2>
-                <p className="text-gray-300 mb-2">
+                <h2 className="text-2xl font-semibold mb-4 text-foreground">No Role Assigned</h2>
+                <p className="text-muted-foreground mb-2">
                   Your address ({address?.slice(0, 6)}...{address?.slice(-4)}) is not registered in the system.
                 </p>
                 {process.env.NODE_ENV === 'development' && (
-                  <div className="mt-4 space-y-2 text-xs text-gray-400">
+                  <div className="mt-4 space-y-2 text-xs text-muted-foreground">
                     {ownerError && (
-                      <p className="text-red-500">
+                      <p className="text-destructive">
                         Error: Could not fetch contract owner. Make sure the contract is deployed at {CONTRACT_ADDRESS}
                       </p>
                     )}
@@ -151,7 +151,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
       {isConnected && <Header />}
       <div className="flex max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6">
         {isConnected && <Sidebar />}
