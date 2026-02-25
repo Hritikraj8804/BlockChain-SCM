@@ -1298,9 +1298,14 @@ function OrderRow({
               </div>
             )}
 
-            {order.fundsReleased && (
+            {order.fundsReleased && order.status !== 10 && (
               <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20">
                 Paid
+              </span>
+            )}
+            {order.status === 10 && (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                Refunded
               </span>
             )}
           </div>
