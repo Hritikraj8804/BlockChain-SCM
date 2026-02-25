@@ -12,6 +12,7 @@ import { formatUnits } from 'viem';
 import { showLoading, showSuccess, showError, closeAlert } from '@/lib/sweetalert';
 import { MetaverseParticles, BlockchainNode } from '@/components/3d-elements';
 import { getOrderStatusText } from '@/utils/tracking-mapper';
+import { QrCodeModal } from '@/components/qr/QrCodeModal';
 
 export function ManufacturerDashboard() {
   const { address } = useAccount();
@@ -26,6 +27,8 @@ export function ManufacturerDashboard() {
   const [newSupplier, setNewSupplier] = useState('');
   const [editingProductId, setEditingProductId] = useState(null);
   const [returnWindowDays, setReturnWindowDays] = useState('');
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedOrderForQr, setSelectedOrderForQr] = useState(null);
   const queryClient = useQueryClient();
 
   // Get manufacturer orders (with auto-refresh for real-time updates)
@@ -879,6 +882,7 @@ export function ManufacturerDashboard() {
                         </div>
                       )}
                       <div className="absolute top-2 right-2 flex gap-1">
+
                         <Button
                           size="icon"
                           variant="secondary"
@@ -1024,6 +1028,10 @@ export function ManufacturerDashboard() {
                       isConfirmingReturn={isConfirmingReturn || isConfirmReturnConfirming}
                       isShipping={isShipping || isShipConfirming}
                       isReleasing={isReleasing || isReleaseConfirming}
+                      onViewQr={() => {
+                        setSelectedOrderForQr(orderId);
+                        setQrModalOpen(true);
+                      }}
                     />
                   ))}
                 </TableBody>
@@ -1036,6 +1044,19 @@ export function ManufacturerDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Waybill QR Code Modal */}
+      {selectedOrderForQr !== null && (
+        <QrCodeModal
+          isOpen={qrModalOpen}
+          onClose={() => {
+            setQrModalOpen(false);
+            setTimeout(() => setSelectedOrderForQr(null), 300);
+          }}
+          orderId={selectedOrderForQr.toString()}
+          orderName={`Order #${selectedOrderForQr.toString()}`}
+        />
+      )}
     </div >
   );
 }
@@ -1058,6 +1079,7 @@ function OrderRow({
   onReleaseEscrow,
   currentReturnWindow,
   isReleasing,
+  onViewQr,
 }) {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -1179,6 +1201,17 @@ function OrderRow({
                 Request Materials
               </Button>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+              onClick={onViewQr}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h.01M8 20h4M4 12v4m0-8h1m11-4h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5a1 1 0 011-1zM4 5h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM15 5h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V6a1 1 0 011-1zM4 16h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zM15 16h4M15 20h4M19 16v4" />
+              </svg>
+              Waybill QR
+            </Button>
             {order.status === 4 && (
               <Button
                 size="sm"
@@ -1265,9 +1298,14 @@ function OrderRow({
               </div>
             )}
 
-            {order.fundsReleased && (
+            {order.fundsReleased && order.status !== 10 && (
               <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-500/10 text-green-500 border border-green-500/20">
                 Paid
+              </span>
+            )}
+            {order.status === 10 && (
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                Refunded
               </span>
             )}
           </div>
