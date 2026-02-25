@@ -13,7 +13,7 @@ import { useEffect } from 'react';
 
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/constants/contract';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { TrackProduct } from '@/components/qr/TrackProduct';
+import { TrackOrder } from '@/components/qr/TrackOrder';
 
 function MainApp() {
   const { role, isLoading, isConnected, isOwner, ownerAddress, ownerError, roleError } = useRole();
@@ -170,7 +170,7 @@ export default function App() {
     <Router>
       <Routes>
         <Route path="/" element={<MainApp />} />
-        <Route path="/track/:id" element={<TrackProduct />} />
+        <Route path="/track/order/:id" element={<TrackOrder />} />
       </Routes>
     </Router>
   );
