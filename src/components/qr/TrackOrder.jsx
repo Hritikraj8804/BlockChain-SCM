@@ -59,11 +59,14 @@ export function TrackOrder() {
 
     const statusText = getOrderStatusText(order.status);
 
-    // Format dates safely
-    const orderedAt = order?.orderedAt
-        ? new Date(Number(order.orderedAt.toString()) * 1000).toLocaleString()
+    const ZERO_ADDR = '0x0000000000000000000000000000000000000000';
+    const isZeroAddr = (addr) => !addr || addr.toLowerCase() === ZERO_ADDR;
+
+    // orderedAt in ABI is actually named 'createdAt'
+    const orderedAt = order?.createdAt !== undefined
+        ? new Date(Number(order.createdAt.toString()) * 1000).toLocaleString()
         : 'Loading...';
-    const deliveredAt = order && order.deliveredAt && Number(order.deliveredAt.toString()) > 0
+    const deliveredAt = order?.deliveredAt !== undefined && Number(order.deliveredAt.toString()) > 0
         ? new Date(Number(order.deliveredAt.toString()) * 1000).toLocaleString()
         : 'Pending';
 
@@ -159,14 +162,14 @@ export function TrackOrder() {
                                 </div>
                                 <div className="flex flex-col md:flex-row md:items-center justify-between p-2 hover:bg-muted/50 rounded">
                                     <span className="text-muted-foreground">Raw Material Supplier:</span>
-                                    <span className={`break-all ${order.rms === '0x0000000000000000000000000000000000000000' ? 'text-muted-foreground italic' : 'text-foreground'}`}>
-                                        {order.rms === '0x0000000000000000000000000000000000000000' ? 'Not Assigned Yet' : order.rms}
+                                    <span className={`break-all ${isZeroAddr(order.rmsAssigned) ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                                        {isZeroAddr(order.rmsAssigned) ? 'Not Assigned Yet' : order.rmsAssigned}
                                     </span>
                                 </div>
                                 <div className="flex flex-col md:flex-row md:items-center justify-between p-2 hover:bg-muted/50 rounded">
                                     <span className="text-muted-foreground">Distributor:</span>
-                                    <span className={`break-all ${order.distributor === '0x0000000000000000000000000000000000000000' ? 'text-muted-foreground italic' : 'text-foreground'}`}>
-                                        {order.distributor === '0x0000000000000000000000000000000000000000' ? 'Not Assigned Yet' : order.distributor}
+                                    <span className={`break-all ${isZeroAddr(order.distributorAssigned) ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                                        {isZeroAddr(order.distributorAssigned) ? 'Not Assigned Yet' : order.distributorAssigned}
                                     </span>
                                 </div>
                             </div>
