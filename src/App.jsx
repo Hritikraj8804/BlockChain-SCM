@@ -12,8 +12,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useEffect } from 'react';
 
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/constants/contract';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { TrackProduct } from '@/components/qr/TrackProduct';
 
-function App() {
+function MainApp() {
   const { role, isLoading, isConnected, isOwner, ownerAddress, ownerError, roleError } = useRole();
   const { address } = useAccount();
 
@@ -163,5 +165,14 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainApp />} />
+        <Route path="/track/:id" element={<TrackProduct />} />
+      </Routes>
+    </Router>
+  );
+}
 
