@@ -59,10 +59,12 @@ export function TrackOrder() {
 
     const statusText = getOrderStatusText(order.status);
 
-    // Format dates
-    const orderedAt = new Date(Number(order.orderedAt) * 1000).toLocaleString();
-    const deliveredAt = order.deliveredAt > 0
-        ? new Date(Number(order.deliveredAt) * 1000).toLocaleString()
+    // Format dates safely
+    const orderedAt = order?.orderedAt
+        ? new Date(Number(order.orderedAt.toString()) * 1000).toLocaleString()
+        : 'Loading...';
+    const deliveredAt = order && order.deliveredAt && Number(order.deliveredAt.toString()) > 0
+        ? new Date(Number(order.deliveredAt.toString()) * 1000).toLocaleString()
         : 'Pending';
 
     return (
@@ -155,18 +157,18 @@ export function TrackOrder() {
                                     <span className="text-muted-foreground">Manufacturer:</span>
                                     <span className="text-foreground break-all">{order.manufacturer}</span>
                                 </div>
-                                {order.rms !== '0x0000000000000000000000000000000000000000' && (
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between p-2 hover:bg-muted/50 rounded">
-                                        <span className="text-muted-foreground">Raw Material Supplier:</span>
-                                        <span className="text-foreground break-all">{order.rms}</span>
-                                    </div>
-                                )}
-                                {order.distributor !== '0x0000000000000000000000000000000000000000' && (
-                                    <div className="flex flex-col md:flex-row md:items-center justify-between p-2 hover:bg-muted/50 rounded">
-                                        <span className="text-muted-foreground">Distributor:</span>
-                                        <span className="text-foreground break-all">{order.distributor}</span>
-                                    </div>
-                                )}
+                                <div className="flex flex-col md:flex-row md:items-center justify-between p-2 hover:bg-muted/50 rounded">
+                                    <span className="text-muted-foreground">Raw Material Supplier:</span>
+                                    <span className={`break-all ${order.rms === '0x0000000000000000000000000000000000000000' ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                                        {order.rms === '0x0000000000000000000000000000000000000000' ? 'Not Assigned Yet' : order.rms}
+                                    </span>
+                                </div>
+                                <div className="flex flex-col md:flex-row md:items-center justify-between p-2 hover:bg-muted/50 rounded">
+                                    <span className="text-muted-foreground">Distributor:</span>
+                                    <span className={`break-all ${order.distributor === '0x0000000000000000000000000000000000000000' ? 'text-muted-foreground italic' : 'text-foreground'}`}>
+                                        {order.distributor === '0x0000000000000000000000000000000000000000' ? 'Not Assigned Yet' : order.distributor}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
