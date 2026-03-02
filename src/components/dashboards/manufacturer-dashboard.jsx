@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -1084,7 +1084,7 @@ function OrderRow({
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [countdown, setCountdown] = useState(null);
-  const autoReleaseTriggered = useRef(false);
+
 
   const { data: order, refetch: refetchOrder } = useReadContract({
     address: CONTRACT_ADDRESS,
@@ -1110,52 +1110,24 @@ function OrderRow({
   // Debug: Log order status and return request
   console.log(`Order #${bookingId} - Status: ${order?.status}, Return Request:`, returnRequest, 'Error:', returnError, returnFetchError);
 
-  // Auto-release escrow when return window expires
+  // Countdown timer — only tracks time left, never auto-fires a transaction
   useEffect(() => {
-    if (!order || order.status !== 6 || order.fundsReleased || autoReleaseTriggered.current || isReleasing) return;
+    if (!order || order.status !== 6 || order.fundsReleased) return;
 
     const deliveredAt = Number(order.deliveredAt);
-    const windowSeconds = currentReturnWindow ? Number(currentReturnWindow) : 120; // Default 2 min for testing
+    const windowSeconds = currentReturnWindow ? Number(currentReturnWindow) : 120;
     const deadline = deliveredAt + windowSeconds;
-    const now = Math.floor(Date.now() / 1000);
 
-    if (now >= deadline) {
-      // Window already expired — auto-release immediately
-      autoReleaseTriggered.current = true;
-      console.log(`Order #${bookingId}: Auto-releasing escrow (window expired)`);
-      onReleaseEscrow(bookingId);
-    } else {
-      // Set a countdown timer
-      const timeLeftMs = (deadline - now) * 1000;
-      setCountdown(deadline - now);
+    const tick = () => {
+      const remaining = deadline - Math.floor(Date.now() / 1000);
+      setCountdown(remaining <= 0 ? 0 : remaining);
+    };
 
-      // Update countdown every second
-      const countdownInterval = setInterval(() => {
-        const remaining = deadline - Math.floor(Date.now() / 1000);
-        if (remaining <= 0) {
-          setCountdown(0);
-          clearInterval(countdownInterval);
-          // Auto-release when countdown hits 0
-          if (!autoReleaseTriggered.current) {
-            autoReleaseTriggered.current = true;
-            console.log(`Order #${bookingId}: Auto-releasing escrow (countdown complete)`);
-            onReleaseEscrow(bookingId);
-          }
-        } else {
-          setCountdown(remaining);
-        }
-      }, 1000);
+    tick(); // initial
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [order?.deliveredAt, order?.status, order?.fundsReleased, currentReturnWindow]);
 
-      return () => clearInterval(countdownInterval);
-    }
-  }, [order, currentReturnWindow, bookingId, onReleaseEscrow, isReleasing]);
-
-  // Reset auto-release flag when order data changes (e.g., new order)
-  useEffect(() => {
-    if (order && order.fundsReleased) {
-      autoReleaseTriggered.current = false;
-    }
-  }, [order?.fundsReleased]);
 
   if (!order) return null;
 
@@ -1286,12 +1258,15 @@ function OrderRow({
                       size="sm"
                       onClick={() => onReleaseEscrow(bookingId)}
                       disabled={isReleasing}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
-                      {isReleasing ? 'Releasing...' : '✅ Release Payment Now'}
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                      </svg>
+                      {isReleasing ? 'Releasing...' : `Release Payment #${bookingId}`}
                     </Button>
                     <span className="text-[10px] text-emerald-400 ml-1">
-                      Return window expired — ready to release
+                      Return window expired
                     </span>
                   </>
                 )}
