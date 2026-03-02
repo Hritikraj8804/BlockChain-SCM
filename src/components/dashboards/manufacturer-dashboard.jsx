@@ -1159,8 +1159,25 @@ function OrderRow({
 
   if (!order) return null;
 
-  // Use the mapper instead of local statusMap
+  // Status chip config
+  const statusNum = Number(order.status);
   const statusText = getOrderStatusText(order.status);
+  const statusChipClass = (
+    statusNum === 6 ? 'bg-green-500/15 border-green-500/30 text-green-400' :
+      statusNum >= 7 ? 'bg-red-500/15 border-red-500/30 text-red-400' :
+        statusNum === 5 ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' :
+          statusNum === 4 ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400' :
+            statusNum === 10 ? 'bg-purple-500/15 border-purple-500/30 text-purple-400' :
+              'bg-amber-500/15 border-amber-500/30 text-amber-400'
+  );
+  const statusDotClass = (
+    statusNum === 6 ? 'bg-green-400' :
+      statusNum >= 7 ? 'bg-red-400' :
+        statusNum === 5 ? 'bg-blue-400' :
+          statusNum === 4 ? 'bg-indigo-400' :
+            statusNum === 10 ? 'bg-purple-400' :
+              'bg-amber-400'
+  );
 
   const handleReject = () => {
     if (!rejectionReason.trim()) {
@@ -1185,50 +1202,56 @@ function OrderRow({
 
   return (
     <>
-      <TableRow>
-        <TableCell className="font-mono">#{bookingId.toString()}</TableCell>
+      <TableRow className="hover:bg-muted/20 transition-colors">
+        <TableCell className="font-mono text-muted-foreground text-xs">#{bookingId.toString()}</TableCell>
         <TableCell>
-          <span className="text-sm">{statusText}</span>
+          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusChipClass}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${statusDotClass} ${statusNum < 6 && statusNum !== 10 ? 'animate-pulse' : ''}`} />
+            {statusText}
+          </span>
         </TableCell>
         <TableCell>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
             {order.status === 0 && (
               <Button
                 size="sm"
                 onClick={() => onRequestMaterials(bookingId)}
                 disabled={isRequesting || !selectedRms}
+                className="gap-1.5"
               >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" /></svg>
                 Request Materials
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+            {/* Waybill QR — icon-only with tooltip */}
+            <button
               onClick={onViewQr}
+              title="View Waybill QR"
+              className="inline-flex items-center justify-center h-7 w-7 rounded-md border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/40 text-muted-foreground hover:text-primary transition-all"
             >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h.01M8 20h4M4 12v4m0-8h1m11-4h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5a1 1 0 011-1zM4 5h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM15 5h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V6a1 1 0 011-1zM4 16h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zM15 16h4M15 20h4M19 16v4" />
               </svg>
-              Waybill QR
-            </Button>
+            </button>
             {order.status === 4 && (
               <Button
                 size="sm"
                 onClick={() => onShipOrder(bookingId)}
                 disabled={isShipping}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
               >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8l1 11a2 2 0 002 2h8a2 2 0 002-2L19 8" /></svg>
                 Assign for Delivery
               </Button>
             )}
             {order.status === 2 && (
               <Button
                 size="sm"
-                variant="outline"
                 onClick={() => onCompleteProduction(bookingId)}
                 disabled={isCompleting}
+                className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
               >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 Complete Production
               </Button>
             )}
@@ -1286,12 +1309,13 @@ function OrderRow({
                       size="sm"
                       onClick={() => onReleaseEscrow(bookingId)}
                       disabled={isReleasing}
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
                     >
-                      {isReleasing ? 'Releasing...' : '✅ Release Payment Now'}
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                      {isReleasing ? 'Releasing...' : 'Release Payment'}
                     </Button>
                     <span className="text-[10px] text-emerald-400 ml-1">
-                      Return window expired — ready to release
+                      Return window expired
                     </span>
                   </>
                 )}
