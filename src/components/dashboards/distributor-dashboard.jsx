@@ -206,8 +206,23 @@ function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmR
   // ... (inside OrderRow component)
   if (!order) return null;
 
-  // Use the mapper instead of local statusMap
+  // Status chip
+  const statusNum = Number(order.status);
   const statusText = getOrderStatusText(order.status);
+  const statusChipClass = (
+    statusNum === 6 ? 'bg-green-500/15 border-green-500/30 text-green-400' :
+      statusNum >= 7 ? 'bg-red-500/15 border-red-500/30 text-red-400' :
+        statusNum === 5 ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' :
+          statusNum === 4 ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400' :
+            'bg-amber-500/15 border-amber-500/30 text-amber-400'
+  );
+  const statusDotClass = (
+    statusNum === 6 ? 'bg-green-400' :
+      statusNum >= 7 ? 'bg-red-400' :
+        statusNum === 5 ? 'bg-blue-400' :
+          statusNum === 4 ? 'bg-indigo-400' :
+            'bg-amber-400'
+  );
 
 
   // Check if assigned for delivery or return pickup
@@ -224,10 +239,13 @@ function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmR
   if (!isAssignedForDelivery && !isAssignedForReturn) return null;
 
   return (
-    <TableRow>
-      <TableCell className="font-mono">#{bookingId.toString()}</TableCell>
+    <TableRow className="hover:bg-muted/20 transition-colors">
+      <TableCell className="font-mono text-muted-foreground text-xs">#{bookingId.toString()}</TableCell>
       <TableCell>
-        <span className="text-sm">{statusText}</span>
+        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusChipClass}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${statusDotClass} ${statusNum < 6 ? 'animate-pulse' : ''}`} />
+          {statusText}
+        </span>
       </TableCell>
       <TableCell>
         <div className="flex gap-2">
@@ -236,23 +254,26 @@ function OrderRow({ bookingId, distributorAddress, onConfirmDelivery, onConfirmR
               size="sm"
               onClick={() => onConfirmDelivery(bookingId)}
               disabled={isThisOrderProcessing}
+              className="gap-1.5 bg-blue-600 hover:bg-blue-700 text-white"
             >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
               {isThisOrderProcessing ? 'Confirming...' : 'Confirm Delivery'}
             </Button>
           )}
           {canPickupReturn && (
             <Button
               size="sm"
-              variant="outline"
               onClick={() => onConfirmReturnPickup(returnRequest.returnId)}
               disabled={isPickupConfirming && isThisReturnProcessing}
-              className="border-orange-400 text-orange-300 hover:bg-orange-500/20"
+              className="gap-1.5 border-orange-400 text-orange-300 hover:bg-orange-500/20"
+              variant="outline"
             >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg>
               {(isPickupConfirming && isThisReturnProcessing) ? 'Confirming...' : 'Confirm Return Pickup'}
             </Button>
           )}
           {!canDeliver && !canPickupReturn && (
-            <span className="text-xs text-muted-foreground">No action available</span>
+            <span className="text-xs text-muted-foreground italic">Awaiting next step</span>
           )}
         </div>
       </TableCell>

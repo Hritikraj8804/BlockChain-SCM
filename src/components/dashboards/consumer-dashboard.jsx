@@ -413,7 +413,24 @@ function OrderRow({ bookingId, selectedOrder, setSelectedOrder, onRequestReturn,
 
   if (!order) return null;
 
+  const statusNum = Number(order.status);
   const statusText = getOrderStatusText(order.status);
+  const statusChipClass = (
+    statusNum === 6 ? 'bg-green-500/15 border-green-500/30 text-green-400' :
+      statusNum >= 7 ? 'bg-red-500/15 border-red-500/30 text-red-400' :
+        statusNum === 5 ? 'bg-blue-500/15 border-blue-500/30 text-blue-400' :
+          statusNum === 4 ? 'bg-indigo-500/15 border-indigo-500/30 text-indigo-400' :
+            statusNum === 10 ? 'bg-purple-500/15 border-purple-500/30 text-purple-400' :
+              'bg-amber-500/15 border-amber-500/30 text-amber-400'
+  );
+  const statusDotClass = (
+    statusNum === 6 ? 'bg-green-400' :
+      statusNum >= 7 ? 'bg-red-400' :
+        statusNum === 5 ? 'bg-blue-400' :
+          statusNum === 4 ? 'bg-indigo-400' :
+            statusNum === 10 ? 'bg-purple-400' :
+              'bg-amber-400'
+  );
 
   const formatTime = (seconds) => {
     // If expired locally, show Expired immediately
@@ -431,13 +448,16 @@ function OrderRow({ bookingId, selectedOrder, setSelectedOrder, onRequestReturn,
   };
 
   return (
-    <TableRow>
-      <TableCell className="font-mono">#{bookingId.toString()}</TableCell>
+    <TableRow className="hover:bg-muted/20 transition-colors">
+      <TableCell className="font-mono text-muted-foreground text-xs">#{bookingId.toString()}</TableCell>
       <TableCell>
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium">{statusText}</span>
+        <div className="flex flex-col gap-1.5">
+          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border w-fit ${statusChipClass}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${statusDotClass} ${statusNum < 6 && statusNum !== 10 ? 'animate-pulse' : ''}`} />
+            {statusText}
+          </span>
           {order.status === 6 && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-xs text-muted-foreground pl-1">
               Return window: {formatTime(remainingTime)}
             </span>
           )}
@@ -467,17 +487,16 @@ function OrderRow({ bookingId, selectedOrder, setSelectedOrder, onRequestReturn,
               </>
             )}
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
+          {/* Waybill QR — icon-only */}
+          <button
             onClick={onViewQr}
-            className="shadow-sm hover:shadow-md bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300"
+            title="View Waybill QR"
+            className="inline-flex items-center justify-center h-7 w-7 rounded-md border border-border/60 bg-muted/30 hover:bg-muted/60 hover:border-primary/40 text-muted-foreground hover:text-primary transition-all"
           >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h.01M8 20h4M4 12v4m0-8h1m11-4h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5a1 1 0 011-1zM4 5h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM15 5h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V6a1 1 0 011-1zM4 16h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4a1 1 0 011-1zM15 16h4M15 20h4M19 16v4" />
             </svg>
-            QR
-          </Button>
+          </button>
           {order.status === 6 && isEligible && !isExpiredLocal && (
             <Button
               size="sm"

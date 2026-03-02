@@ -134,15 +134,25 @@ function OrderRow({ bookingId, rmsAddress, onDispatchMaterials, isDispatching })
 
   if (!order) return null;
 
+  const statusNum = Number(order.status);
   const statusText = getOrderStatusText(order.status);
+  const statusChipClass = (
+    statusNum === 2 ? 'bg-teal-500/15 border-teal-500/30 text-teal-400' :
+      statusNum === 1 ? 'bg-amber-500/15 border-amber-500/30 text-amber-400 animate-pulse' :
+        'bg-muted/40 border-border text-muted-foreground'
+  );
+  const statusDotClass = statusNum === 1 ? 'bg-amber-400 animate-pulse' : statusNum === 2 ? 'bg-teal-400' : 'bg-muted-foreground';
 
   const canDispatch = order.status === 1 && order.rmsAssigned?.toLowerCase() === rmsAddress?.toLowerCase();
 
   return (
-    <TableRow>
-      <TableCell className="font-mono">#{bookingId.toString()}</TableCell>
+    <TableRow className="hover:bg-muted/20 transition-colors">
+      <TableCell className="font-mono text-muted-foreground text-xs">#{bookingId.toString()}</TableCell>
       <TableCell>
-        <span className="text-sm">{statusText}</span>
+        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${statusChipClass}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${statusDotClass}`} />
+          {statusText}
+        </span>
       </TableCell>
       <TableCell>
         {canDispatch ? (
@@ -150,11 +160,13 @@ function OrderRow({ bookingId, rmsAddress, onDispatchMaterials, isDispatching })
             size="sm"
             onClick={() => onDispatchMaterials(bookingId)}
             disabled={isDispatching}
+            className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
           >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10" /></svg>
             {isDispatching ? 'Dispatching...' : 'Dispatch Materials'}
           </Button>
         ) : (
-          <span className="text-xs text-muted-foreground">No action available</span>
+          <span className="text-xs text-muted-foreground italic">Awaiting request</span>
         )}
       </TableCell>
     </TableRow>
