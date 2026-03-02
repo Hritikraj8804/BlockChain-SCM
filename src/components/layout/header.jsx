@@ -13,8 +13,8 @@ export function Header({ isDark, toggleTheme }) {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-4 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-secondary border-primary/20 text-primary-foreground flex items-center justify-center">
-              <img src="/logo.svg" alt="AI SCM Logo" className="h-6 w-6" />
+            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-secondary border border-primary/40 text-primary-foreground flex items-center justify-center shadow-sm">
+              <img src="/logo.svg" alt="AI SCM Logo" className="h-6 w-6 brightness-0 invert" />
             </div>
             <div className="min-w-0">
               <h1 className="text-sm font-semibold text-foreground truncate">AI Supply Chain Commerce</h1>

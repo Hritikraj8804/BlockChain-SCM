@@ -153,11 +153,11 @@ function MainApp({ isDark, toggleTheme }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
+    <div className="min-h-screen flex flex-col">
       {isConnected && <Header isDark={isDark} toggleTheme={toggleTheme} />}
-      <div className="flex max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6">
+      <div className="flex max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6 w-full flex-1">
         {isConnected && <Sidebar />}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-transparent">
           {renderDashboard()}
         </main>
       </div>
