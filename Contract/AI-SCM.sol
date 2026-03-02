@@ -527,7 +527,8 @@
             emit MaterialsDispatched(_bookingId, msg.sender);
         }
         
-        // Step 4: Manufacturer completes production (triggers random distributor selection)
+        // Step 4: Manufacturer completes production
+        // Sets status to ReadyForShipping. Manufacturer must then call shipOrder() to dispatch.
         function completeProduction(uint256 _bookingId) 
             external 
             onlyManufacturer 
@@ -536,28 +537,12 @@
             Order storage order = orders[_bookingId];
             if (order.manufacturer != msg.sender) revert Unauthorized();
             if (order.status != OrderStatus.MaterialsDispatched) revert InvalidStatus();
-            if (distributorPool.length == 0) revert NotFound();
             
-            // Mark production complete
+            // Mark production complete — manufacturer must manually call shipOrder() next
             order.status = OrderStatus.ReadyForShipping;
             _addTrackingPoint(_bookingId, msg.sender, ActorRole.Manufacturer, TrackingStatus.ProductionCompleted);
             
-            // AUTOMATIC RANDOM DISTRIBUTOR SELECTION
-            uint256 randomIndex = uint256(
-                keccak256(abi.encodePacked(block.timestamp, msg.sender, distributorPool.length))
-            ) % distributorPool.length;
-            
-            address selectedDistributor = distributorPool[randomIndex];
-            order.distributorAssigned = selectedDistributor;
-            order.status = OrderStatus.InTransit;
-            
-            // Add to distributor dashboard
-            actorOrders[selectedDistributor].push(_bookingId);
-            
-            _addTrackingPoint(_bookingId, selectedDistributor, ActorRole.Distributor, TrackingStatus.DistributorAssigned);
-            
             emit ProductionCompleted(_bookingId, msg.sender);
-            emit DistributorAssigned(_bookingId, selectedDistributor);
         }
         
         // Step 5: Distributor confirms delivery to consumer
