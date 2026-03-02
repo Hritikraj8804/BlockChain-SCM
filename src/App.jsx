@@ -9,13 +9,13 @@ import { DistributorDashboard } from '@/components/dashboards/distributor-dashbo
 import { ConnectWalletLanding } from '@/components/connect-wallet-landing';
 import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi';
 import { Card, CardContent } from '@/components/ui/card';
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/constants/contract';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { TrackOrder } from '@/components/qr/TrackOrder';
 
-function MainApp() {
+function MainApp({ isDark, toggleTheme }) {
   const { role, isLoading, isConnected, isOwner, ownerAddress, ownerError, roleError } = useRole();
   const { address } = useAccount();
 
@@ -154,7 +154,7 @@ function MainApp() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
-      {isConnected && <Header />}
+      {isConnected && <Header isDark={isDark} toggleTheme={toggleTheme} />}
       <div className="flex max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6">
         {isConnected && <Sidebar />}
         <main className="flex-1 overflow-auto">
@@ -166,10 +166,27 @@ function MainApp() {
 }
 
 export default function App() {
+  const [isDark, setIsDark] = useState(() => {
+    // Read persisted preference; default to dark
+    return localStorage.getItem('theme') !== 'light';
+  });
+
+  useEffect(() => {
+    const html = document.documentElement;
+    if (isDark) {
+      html.classList.remove('light');
+    } else {
+      html.classList.add('light');
+    }
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark((d) => !d);
+
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainApp />} />
+        <Route path="/" element={<MainApp isDark={isDark} toggleTheme={toggleTheme} />} />
         <Route path="/track/order/:id" element={<TrackOrder />} />
       </Routes>
     </Router>

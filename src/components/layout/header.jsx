@@ -3,7 +3,7 @@ import { useAccount, useDisconnect } from 'wagmi';
 import { useRole } from '@/hooks/useRole';
 import { Button } from '@/components/ui/button';
 
-export function Header() {
+export function Header({ isDark, toggleTheme }) {
   const { address, isConnected } = useAccount();
   const { role } = useRole();
   const { disconnect } = useDisconnect();
@@ -14,9 +14,7 @@ export function Header() {
         <div className="flex items-center gap-4 min-w-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-secondary border-primary/20 text-primary-foreground flex items-center justify-center">
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 6h15l-1.5 9h-13zM6 6l-2 0M9 20a1 1 0 100-2 1 1 0 000 2zm9 0a1 1 0 100-2 1 1 0 000 2z" />
-              </svg>
+              <img src="/logo.svg" alt="AI SCM Logo" className="h-6 w-6" />
             </div>
             <div className="min-w-0">
               <h1 className="text-sm font-semibold text-foreground truncate">AI Supply Chain Commerce</h1>
@@ -38,6 +36,26 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-border bg-card/40 hover:bg-card/80 text-muted-foreground hover:text-foreground transition-all"
+            aria-label="Toggle theme"
+          >
+            {isDark ? (
+              /* Sun icon */
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+              </svg>
+            ) : (
+              /* Moon icon */
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+          </button>
+
           <ConnectButton.Custom>
             {({ openConnectModal, account, mounted }) => (
               <div

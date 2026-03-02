@@ -47,56 +47,55 @@
 
 @layer base {
   :root {
-    /* Digital Ocean Theme */
+    /* Dark Theme (default) — Digital Ocean Navy */
 
-    /* Page Background: Deep Navy (#0f172a) -> hsl(222, 47%, 11%) */
     --background: 222 47% 11%;
-
-    /* Main Text: Cool White (#f8fafc) -> hsl(210, 40%, 98%) */
     --foreground: 210 40% 98%;
-
-    /* Header Bar: Darker Navy (#020617) -> hsl(222, 47%, 5%) */
     --header: 222 47% 5%;
-
-    /* Card/Input Background: User Request (#1f2a38) -> hsl(214, 29%, 17%) */
     --card: 214 29% 17%;
     --card-foreground: 210 40% 98%;
-
     --popover: 214 29% 17%;
     --popover-foreground: 210 40% 98%;
-
-    /* Primary: Electric Teal (#06b6d4) -> hsl(186, 92%, 48%) */
     --primary: 186 92% 48%;
     --primary-foreground: 222 47% 11%;
-
-    /* Secondary: Cyan (#0891b2) -> hsl(189, 94%, 36%) */
     --secondary: 189 94% 36%;
     --secondary-foreground: 210 40% 98%;
-
-    /* Muted: Slate (#334155) -> hsl(215, 25%, 27%) */
     --muted: 215 25% 27%;
     --muted-foreground: 215 20% 65%;
-
-    /* Accent: Indigo (#6366f1) -> hsl(244, 75%, 65%) */
     --accent: 244 75% 65%;
     --accent-foreground: 210 40% 98%;
-
-    /* Price: Green/Teal (#2dd4bf) -> hsl(168, 64%, 50%) */
     --price: 168 64% 50%;
-
-    /* Destructive: Rose (#f43f5e) */
     --destructive: 343 87% 60%;
     --destructive-foreground: 210 40% 98%;
-
-    /* Borders: Slate Blue (#334155) -> hsl(215, 25%, 27%) */
     --border: 215 25% 27%;
     --input: 215 25% 27%;
-    /* Matches border color for visibility */
-
-    /* Focus ring: Teal */
     --ring: 186 92% 48%;
-
     --radius: 0.5rem;
+  }
+
+  /* Light Theme — Clean Slate */
+  .light {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --header: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 186 92% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 189 94% 30%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 40% 93%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 244 75% 60%;
+    --accent-foreground: 0 0% 100%;
+    --price: 168 64% 36%;
+    --destructive: 343 87% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 32% 88%;
+    --input: 214 32% 88%;
+    --ring: 186 92% 38%;
   }
 }
 
