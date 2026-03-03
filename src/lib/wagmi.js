@@ -67,12 +67,10 @@ const anvilChain = createCustomChain({
   blockExplorerUrl: '', // No block explorer for local Anvil
 });
 
-// Default config for development and production
-// Using Anvil as primary in dev, Sepolia/Mainnet in production
+// Default config — Anvil is always the primary chain (used both locally and on GCP VM)
 export const defaultConfig = getDefaultConfig({
   appName: 'AI Supply Chain',
   projectId: 'ffd9c14979b35512b37295583be3d623',
-  chains: import.meta.env.PROD ? [sepolia, mainnet] : [anvilChain, localhost, sepolia],
+  chains: [anvilChain, localhost, sepolia],
   ssr: false,
 });
-
