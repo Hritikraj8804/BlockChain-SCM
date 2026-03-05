@@ -299,7 +299,7 @@ export function LandingPage({ isDark, toggleTheme }) {
                             </h2>
                         </div>
                         <p className="max-w-xs text-muted-foreground leading-relaxed text-base border-l-2 border-accent/40 pl-4">
-                            Five phases operating through decentralized consensus — a fully autonomous logistics network.
+                            Five phases operating through decentralized consensus a fully autonomous logistics network.
                         </p>
                     </div>
 

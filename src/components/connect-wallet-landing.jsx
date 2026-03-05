@@ -58,7 +58,7 @@ export function ConnectWalletLanding() {
 
             {/* Connect button area */}
             <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-4">
-              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Step 1 — Connect Wallet</div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Connect Wallet</div>
               <ConnectButton.Custom>
                 {({ account, openConnectModal, mounted: rbMounted }) => (
                   <div aria-hidden={!rbMounted}>
