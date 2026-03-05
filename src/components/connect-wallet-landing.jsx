@@ -1,257 +1,106 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft, Shield, Zap, QrCode, Link2, ArrowUpRight
+} from 'lucide-react';
 
-// 3D CSS-based Supply Chain Elements
-function FloatingBox({ delay, position, color }) {
-  return (
-    <motion.div
-      className="absolute w-16 h-16 rounded-lg shadow-2xl"
-      style={{
-        background: `linear-gradient(135deg, ${color}, ${color}dd)`,
-        left: `${position.x}%`,
-        top: `${position.y}%`,
-      }}
-      animate={{
-        y: [0, -30, 0],
-        rotate: [0, 360],
-        scale: [1, 1.1, 1],
-      }}
-      transition={{
-        duration: 3 + delay,
-        repeat: Infinity,
-        delay: delay,
-        ease: "easeInOut",
-      }}
-    />
-  );
-}
-
-function Factory3D({ delay, position }) {
-  return (
-    <motion.div
-      className="absolute"
-      style={{
-        left: `${position.x}%`,
-        top: `${position.y}%`,
-        transformStyle: 'preserve-3d',
-      }}
-      animate={{
-        rotateY: [0, 360],
-      }}
-      transition={{
-        duration: 20 + delay,
-        repeat: Infinity,
-        ease: "linear",
-      }}
-    >
-      <div className="relative" style={{ transformStyle: 'preserve-3d' }}>
-        {/* Main building */}
-        <div
-          className="absolute bg-gradient-to-b from-indigo-600 to-indigo-800 shadow-xl"
-          style={{
-            width: '60px',
-            height: '90px',
-            transform: 'translateZ(0px)',
-          }}
-        />
-        {/* Chimney */}
-        <div
-          className="absolute bg-indigo-500 shadow-lg"
-          style={{
-            width: '8px',
-            height: '30px',
-            left: '45px',
-            top: '-15px',
-            transform: 'translateZ(0px)',
-          }}
-        />
-        {/* Windows */}
-        {[-15, 15].map((x, i) => (
-          <div
-            key={i}
-            className="absolute bg-yellow-400 shadow-lg"
-            style={{
-              width: '12px',
-              height: '16px',
-              left: `${30 + x}px`,
-              top: '20px',
-              transform: 'translateZ(0px)',
-              boxShadow: '0 0 10px rgba(251, 191, 36, 0.8)',
-            }}
-          />
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-function Truck3D({ delay, position }) {
-  return (
-    <motion.div
-      className="absolute"
-      style={{
-        left: `${position.x}%`,
-        top: `${position.y}%`,
-      }}
-      animate={{
-        x: [0, 100, 0],
-      }}
-      transition={{
-        duration: 8 + delay,
-        repeat: Infinity,
-        delay: delay,
-        ease: "easeInOut",
-      }}
-    >
-      <div className="relative">
-        {/* Truck body */}
-        <div
-          className="absolute bg-gradient-to-b from-green-500 to-green-600 shadow-lg rounded"
-          style={{
-            width: '50px',
-            height: '25px',
-            transform: 'translateZ(0px)',
-          }}
-        />
-        {/* Truck cabin */}
-        <div
-          className="absolute bg-green-600 shadow-lg rounded"
-          style={{
-            width: '25px',
-            height: '25px',
-            left: '-12px',
-            transform: 'translateZ(0px)',
-          }}
-        />
-        {/* Wheels */}
-        {[-10, 10].map((x, i) => (
-          <div
-            key={i}
-            className="absolute bg-gray-800 rounded-full shadow-md"
-            style={{
-              width: '12px',
-              height: '12px',
-              left: `${x}px`,
-              top: '20px',
-              transform: 'translateZ(0px)',
-            }}
-          />
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-function BlockchainNode({ delay, position, color }) {
-  return (
-    <motion.div
-      className="absolute w-8 h-8 rounded-full shadow-2xl"
-      style={{
-        background: `radial-gradient(circle, ${color}, ${color}88)`,
-        left: `${position.x}%`,
-        top: `${position.y}%`,
-        boxShadow: `0 0 20px ${color}66`,
-      }}
-      animate={{
-        scale: [1, 1.3, 1],
-        opacity: [0.7, 1, 0.7],
-        y: [0, -20, 0],
-      }}
-      transition={{
-        duration: 2 + delay,
-        repeat: Infinity,
-        delay: delay,
-        ease: "easeInOut",
-      }}
-    />
-  );
-}
+const FEATURES = [
+  { icon: Shield, title: 'On-Chain Escrow', desc: 'Funds locked until delivery is confirmed.' },
+  { icon: Zap, title: 'Auto Assignment', desc: 'Distributors auto-assigned by smart contract.' },
+  { icon: QrCode, title: 'QR Tracking', desc: 'Scan to verify the full chain of custody.' },
+  { icon: Link2, title: 'Immutable Ledger', desc: 'Every event permanently written on-chain.' },
+];
 
 export function ConnectWalletLanding() {
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const navigate = useNavigate();
+  useEffect(() => { setMounted(true); }, []);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-6 py-12">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="w-full max-w-5xl"
-        >
-          <Card className="bg-card/60 backdrop-blur-md border border-border/60 shadow-xl">
-            <CardContent className="p-8 md:p-12">
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-                {/* Left: Title/CTA */}
-                <div className="lg:col-span-3 space-y-4">
-                  <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground">AI Supply Chain Commerce</h1>
-                  <p className="text-sm md:text-base text-muted-foreground">Blockchain-based ecommerce and logistics dashboard with role-based access. Connect your wallet to get started.</p>
-                  <div>
-                    <ConnectButton.Custom>
-                      {({ account, openConnectModal, mounted }) => (
-                        <div aria-hidden={!mounted}>
-                          {account ? (
-                            <Button
-                              variant="ghost"
-                              className="rounded-full border border-border/60 bg-card/40 hover:bg-card/60 backdrop-blur-md text-foreground px-5 h-10"
-                            >
-                              {account.displayName}
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={openConnectModal}
-                              className="rounded-full h-10 px-6 font-medium text-foreground"
-                              style={{
-                                background:
-                                  'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))',
-                                color: 'hsl(var(--primary-foreground))',
-                                border: '1px solid hsl(var(--primary))',
-                                boxShadow: '0 4px 14px 0 rgba(6, 182, 212, 0.35)',
-                              }}
-                            >
-                              Connect Wallet
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </ConnectButton.Custom>
-                  </div>
-                </div>
+    <div className="min-h-screen bg-background flex flex-col">
 
-                {/* Right: Bento grid */}
-                <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-4">
-                  {[
-                    { title: 'Real-Time Tracking', desc: 'Track orders and shipments instantly.' },
-                    { title: 'Smart Inventory', desc: 'Automate stock and fulfillment.' },
-                    { title: 'Immutable Records', desc: 'Tamper-proof, transparent logs.' },
-                  ].map((item, i) => (
-                    <motion.div
-                      key={item.title}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 * i }}
-                      className="rounded-xl border border-border/60 bg-background/40 p-4 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-foreground">{item.title}</div>
-                        <div className="text-xs text-muted-foreground">{item.desc}</div>
+      {/* Minimal top nav */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-black text-xs">
+            SC
+          </div>
+          <span className="font-bold text-sm tracking-wide text-foreground">AI Supply Chain</span>
+        </div>
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors font-medium"
+        >
+          <ArrowLeft size={15} /> Back to Home
+        </button>
+      </div>
+
+      {/* Main connect panel */}
+      <div className="flex-1 flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+
+          {/* Left: connect card */}
+          <div className="flex flex-col gap-6">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-primary/25 bg-primary/5 text-primary text-xs font-bold uppercase tracking-[0.15em] mb-6">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                Blockchain Powered
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground mb-3 leading-[1.1]">
+                Connect your wallet<br />
+                <span className="text-muted-foreground font-normal">to access the dashboard.</span>
+              </h1>
+              <p className="text-muted-foreground leading-relaxed text-sm">
+                Role-based access is determined automatically from the blockchain. Connect MetaMask and your dashboard loads instantly.
+              </p>
+            </div>
+
+            {/* Connect button area */}
+            <div className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-4">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Connect Wallet</div>
+              <ConnectButton.Custom>
+                {({ account, openConnectModal, mounted: rbMounted }) => (
+                  <div aria-hidden={!rbMounted}>
+                    {account ? (
+                      <div className="flex items-center gap-3 bg-muted/50 rounded-xl px-4 py-3">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                        <div>
+                          <div className="text-sm font-semibold text-foreground">{account.displayName}</div>
+                          <div className="text-xs text-muted-foreground">Wallet connected — loading your role…</div>
+                        </div>
                       </div>
-                    </motion.div>
-                  ))}
+                    ) : (
+                      <button
+                        onClick={openConnectModal}
+                        className="w-full h-12 rounded-xl font-bold text-base text-primary-foreground bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                      >
+                        Connect MetaMask <ArrowUpRight size={18} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </ConnectButton.Custom>
+            </div>
+          </div>
+
+          {/* Right: feature grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="rounded-2xl border border-border bg-card p-5 flex flex-col gap-3 hover:border-primary/30 transition-colors group">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center group-hover:bg-primary/15 transition-colors">
+                  <Icon size={17} className="text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-foreground mb-1">{title}</div>
+                  <div className="text-xs text-muted-foreground leading-relaxed">{desc}</div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+            ))}
+          </div>
+
+        </div>
       </div>
     </div>
   );
 }
-

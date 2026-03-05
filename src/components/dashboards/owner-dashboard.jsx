@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AIOrderSummary } from '@/components/ai-order-summary';
+import { AIOwnerAssistant } from '@/components/ai/AIOwnerAssistant';
 
 export function OwnerDashboard() {
   const [actorAddress, setActorAddress] = useState('');
@@ -680,11 +681,22 @@ export function OwnerDashboard() {
         </CardContent>
       </Card>
 
-      {
-        selectedOrder && (
-          <AIOrderSummary bookingId={selectedOrder} />
-        )
-      }
+      {selectedOrder && (
+        <AIOrderSummary bookingId={selectedOrder} />
+      )}
+
+      {/* Owner AI Assistant — floating chat */}
+      <AIOwnerAssistant
+        stats={{
+          products: productCounter ? Number(productCounter) : 0,
+          orders: orderCounter ? Number(orderCounter) : 0,
+          returns: returnCounter ? Number(returnCounter) : 0,
+          consumers: consumerCount?.toString() || 0,
+          manufacturers: manufacturerPool?.length || 0,
+          rms: rmsPool?.length || 0,
+          distributors: distributorPool?.length || 0,
+        }}
+      />
     </div >
   );
 }

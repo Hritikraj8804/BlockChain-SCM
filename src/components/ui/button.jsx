@@ -6,20 +6,20 @@ const Button = React.forwardRef(
     return (
       <button
         className={cn(
-          "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center rounded-xl text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97]",
           {
-            "bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:from-secondary hover:to-primary": variant === "default",
-            "bg-gradient-to-r from-destructive to-destructive/80 text-destructive-foreground hover:from-destructive/90 hover:to-destructive": variant === "destructive",
-            "border border-luxury bg-charcoal text-foreground hover:bg-card/80 hover:border-accent/60": variant === "outline",
-            "bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground hover:from-secondary/90 hover:to-secondary": variant === "secondary",
-            "bg-transparent hover:bg-accent/20 text-foreground hover:text-accent": variant === "ghost",
-            "text-accent underline-offset-4 hover:underline hover:text-accent/80": variant === "link",
+            "bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:opacity-90 shadow-sm hover:shadow-md hover:shadow-primary/20": variant === "default",
+            "bg-destructive/10 text-destructive border border-destructive/30 hover:bg-destructive hover:text-destructive-foreground": variant === "destructive",
+            "border border-border bg-background text-foreground hover:bg-muted hover:border-foreground/20": variant === "outline",
+            "bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20": variant === "secondary",
+            "bg-transparent hover:bg-muted text-foreground": variant === "ghost",
+            "text-primary underline-offset-4 hover:underline": variant === "link",
           },
           {
             "h-10 px-4 py-2": size === "default",
-            "h-9 rounded-md px-3": size === "sm",
-            "h-11 rounded-md px-8": size === "lg",
-            "h-10 w-10": size === "icon",
+            "h-8 rounded-lg px-3 text-xs": size === "sm",
+            "h-11 px-8 text-base": size === "lg",
+            "h-9 w-9 p-0": size === "icon",
           },
           className
         )}
@@ -32,4 +32,3 @@ const Button = React.forwardRef(
 Button.displayName = "Button"
 
 export { Button }
-
