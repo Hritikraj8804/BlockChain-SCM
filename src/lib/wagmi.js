@@ -25,11 +25,11 @@ export const createCustomChain = ({
     },
     blockExplorers: blockExplorerUrl
       ? {
-          default: {
-            name: 'Explorer',
-            url: blockExplorerUrl,
-          },
-        }
+        default: {
+          name: 'Explorer',
+          url: blockExplorerUrl,
+        },
+      }
       : undefined,
   });
 };
@@ -62,16 +62,15 @@ export const getWagmiConfig = (chainId, rpcUrl, chainName = 'Custom Chain') => {
 const anvilChain = createCustomChain({
   id: 31337, // Anvil default chain ID
   name: 'Anvil', // Network name (must match what your wallet expects)
-  rpcUrl: 'http://127.0.0.1:8545', // Anvil RPC URL
+  // In production: set VITE_ANVIL_RPC_URL=http://<your-gcp-vm-ip>:8545 in .env.local before building
+  rpcUrl: import.meta.env.VITE_ANVIL_RPC_URL || 'http://127.0.0.1:8545',
   blockExplorerUrl: '', // No block explorer for local Anvil
 });
 
-// Default config for development
-// Using Anvil as the primary chain
+// Default config — Anvil is always the primary chain (used both locally and on GCP VM)
 export const defaultConfig = getDefaultConfig({
   appName: 'AI Supply Chain',
   projectId: 'ffd9c14979b35512b37295583be3d623',
-  chains: [anvilChain, localhost, sepolia], // Anvil first, with fallbacks
+  chains: [anvilChain, localhost, sepolia],
   ssr: false,
 });
-
