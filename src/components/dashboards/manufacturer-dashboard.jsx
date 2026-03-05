@@ -13,6 +13,7 @@ import { showLoading, showSuccess, showError, closeAlert } from '@/lib/sweetaler
 import { MetaverseParticles, BlockchainNode } from '@/components/3d-elements';
 import { getOrderStatusText } from '@/utils/tracking-mapper';
 import { QrCodeModal } from '@/components/qr/QrCodeModal';
+import { AIManufacturerAssistant } from '@/components/ai/AIManufacturerAssistant';
 
 export function ManufacturerDashboard() {
   const { address } = useAccount();
@@ -1057,6 +1058,20 @@ export function ManufacturerDashboard() {
           orderName={`Order #${selectedOrderForQr.toString()}`}
         />
       )}
+
+      {/* Manufacturer AI Assistant */}
+      <AIManufacturerAssistant
+        stats={{
+          products: activeProducts?.length || 0,
+          orders: orders?.length || 0,
+          awaitingMaterials: 0,
+          inProduction: 0,
+          readyToShip: 0,
+          delivered: 0,
+          pendingReturns: 0,
+          escrowReleasable: 0
+        }}
+      />
     </div >
   );
 }

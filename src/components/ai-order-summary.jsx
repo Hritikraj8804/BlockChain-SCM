@@ -278,8 +278,13 @@ export function AIOrderSummary({ bookingId }) {
     } catch (error) {
       console.error('Error in handleGenerateAISummary:', error);
       const errorMessage = error.message || 'Unknown error occurred';
-      toast.error(`Failed to generate AI summary: ${errorMessage}`);
-      setAiSummary([`Error: ${errorMessage}. Please check the browser console for more details.`]);
+      if (errorMessage.includes('high demand') || errorMessage.includes('Spikes in demand') || errorMessage.includes('503')) {
+        toast.error("AI is currently experiencing high demand. Please try again shortly.");
+        setAiSummary(["I'm currently assisting many users and need a quick breather. Please try generating the summary again in a few moments! ⏳"]);
+      } else {
+        toast.error(`Failed to generate AI summary: ${errorMessage}`);
+        setAiSummary([`Error: ${errorMessage}. Please check the browser console for more details.`]);
+      }
     } finally {
       setIsGenerating(false);
     }

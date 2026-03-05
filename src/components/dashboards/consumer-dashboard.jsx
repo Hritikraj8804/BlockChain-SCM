@@ -14,6 +14,7 @@ import { showLoading, showSuccess, showError, closeAlert } from '@/lib/sweetaler
 import { ProductCard3D, AnimatedCart } from '@/components/3d-elements';
 import { getOrderStatusText } from '@/utils/tracking-mapper';
 import { QrCodeModal } from '@/components/qr/QrCodeModal';
+import { AICustomerCare } from '@/components/ai/AICustomerCare';
 
 export function ConsumerDashboard() {
   const { address } = useAccount();
@@ -347,6 +348,16 @@ export function ConsumerDashboard() {
           orderName={`Order #${selectedOrderForQr.toString()}`}
         />
       )}
+
+      {/* Consumer AI Assistant */}
+      <AICustomerCare
+        stats={{
+          orders: orders?.length || 0,
+          delivered: 0,
+          active: orders?.length || 0,
+          returns: 0
+        }}
+      />
     </div>
   );
 }
