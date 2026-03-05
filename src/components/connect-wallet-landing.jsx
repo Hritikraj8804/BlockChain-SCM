@@ -81,9 +81,6 @@ export function ConnectWalletLanding() {
                   </div>
                 )}
               </ConnectButton.Custom>
-              <div className="text-xs text-muted-foreground text-center">
-                Your role (Owner / Manufacturer / Consumer / etc.) is read directly from the smart contract.
-              </div>
             </div>
           </div>
 
