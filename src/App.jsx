@@ -187,9 +187,9 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainApp isDark={isDark} toggleTheme={toggleTheme} />} />
+        <Route path="/" element={<LandingPage isDark={isDark} toggleTheme={toggleTheme} />} />
+        <Route path="/app" element={<MainApp isDark={isDark} toggleTheme={toggleTheme} />} />
         <Route path="/track/order/:id" element={<TrackOrder />} />
-        <Route path="/landing" element={<LandingPage isDark={isDark} toggleTheme={toggleTheme} />} />
       </Routes>
     </Router>
   );

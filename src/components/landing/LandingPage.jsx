@@ -86,7 +86,7 @@ export function LandingPage({ isDark, toggleTheme }) {
                         className="w-10 h-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all">
                         {isDark ? <Sun size={17} /> : <Moon size={17} />}
                     </button>
-                    <button onClick={() => navigate('/')}
+                    <button onClick={() => navigate('/app')}
                         className="px-5 py-2.5 rounded-xl bg-foreground text-background font-bold text-sm tracking-wide hover:opacity-90 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-black/10 flex items-center gap-2">
                         Launch App <ArrowUpRight size={15} />
                     </button>
@@ -140,7 +140,7 @@ export function LandingPage({ isDark, toggleTheme }) {
 
                     {/* CTAs */}
                     <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <button onClick={() => navigate('/')}
+                        <button onClick={() => navigate('/app')}
                             className="group relative px-8 py-4 rounded-2xl bg-foreground text-background font-bold text-sm uppercase tracking-widest transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-xl shadow-black/20">
                             {/* Pulsing ring */}
                             <span className="absolute inset-0 rounded-2xl ring-2 ring-primary/30 opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />
@@ -379,7 +379,7 @@ export function LandingPage({ isDark, toggleTheme }) {
                     </p>
 
                     <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
-                        <button onClick={() => navigate('/')}
+                        <button onClick={() => navigate('/app')}
                             className="group relative px-10 py-5 rounded-2xl bg-background text-foreground font-black text-base hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center gap-3">
                             <span className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-all duration-500 ring-4 ring-primary/20 scale-105" />
                             Enter Dashboard
