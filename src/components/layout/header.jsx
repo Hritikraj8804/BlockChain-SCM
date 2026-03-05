@@ -1,97 +1,104 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useDisconnect } from 'wagmi';
 import { useRole } from '@/hooks/useRole';
-import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { Moon, Sun, LogOut, ChevronLeft } from 'lucide-react';
+
+const roleColors = {
+  Owner: 'bg-amber-500/15 text-amber-400 border-amber-500/25',
+  Consumer: 'bg-blue-500/15 text-blue-400 border-blue-500/25',
+  Manufacturer: 'bg-teal-500/15 text-teal-400 border-teal-500/25',
+  RawMaterialSupplier: 'bg-violet-500/15 text-violet-400 border-violet-500/25',
+  Distributor: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25',
+};
 
 export function Header({ isDark, toggleTheme }) {
   const { address, isConnected } = useAccount();
   const { role } = useRole();
   const { disconnect } = useDisconnect();
+  const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md text-foreground">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-secondary border border-primary/40 text-primary-foreground flex items-center justify-center shadow-sm">
-              <img src="/logo.svg" alt="AI SCM Logo" className="h-6 w-6 brightness-0 invert" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-sm font-semibold text-foreground truncate">AI Supply Chain Commerce</h1>
-              <p className="text-xs text-muted-foreground truncate">Professional ecommerce + logistics dashboard</p>
-            </div>
-          </div>
+    <header className="sticky top-0 z-50 h-16 flex items-center border-b border-border bg-background/80 backdrop-blur-xl text-foreground px-4 sm:px-6 lg:px-8">
 
-          {isConnected && role && (
-            <div className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-card/40 px-3 py-1 text-xs text-muted-foreground">
-              <span className="h-2 w-2 rounded-full bg-accent" />
-              <span className="truncate">Role: <span className="text-foreground font-medium">{role}</span></span>
-              {address && (
-                <span className="hidden md:inline text-muted-foreground">
-                  • {address.slice(0, 6)}…{address.slice(-4)}
-                </span>
+      <div className="flex items-center gap-4 flex-1 min-w-0">
+        {/* Back to Landing */}
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-sm font-medium group"
+          title="Back to Landing"
+        >
+          <ChevronLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+          <span className="hidden sm:inline">Home</span>
+        </button>
+
+        <div className="w-px h-5 bg-border" />
+
+        {/* Logo + Brand */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-black text-xs shadow-sm shadow-primary/20 flex-shrink-0">
+            SC
+          </div>
+          <div className="min-w-0 hidden sm:block">
+            <div className="text-sm font-bold text-foreground leading-tight">AI Supply Chain</div>
+            <div className="text-[10px] text-muted-foreground leading-tight tracking-wide uppercase">Dashboard</div>
+          </div>
+        </div>
+
+        {/* Role badge */}
+        {isConnected && role && (
+          <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold ${roleColors[role] || 'bg-muted text-muted-foreground border-border'}`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
+            {role === 'RawMaterialSupplier' ? 'RMS' : role}
+            {address && (
+              <span className="hidden lg:inline opacity-60 font-mono">
+                · {address.slice(0, 6)}…{address.slice(-4)}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Right controls */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={toggleTheme}
+          title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          className="h-9 w-9 rounded-xl border border-border bg-card/50 hover:bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-all"
+          aria-label="Toggle theme"
+        >
+          {isDark ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
+
+        <ConnectButton.Custom>
+          {({ openConnectModal, account, mounted }) => (
+            <div aria-hidden={!mounted} className="inline-flex">
+              {account ? (
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-2 h-9 px-3 rounded-xl border border-border bg-card/50 text-sm font-medium text-foreground">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    {account.displayName}
+                  </div>
+                  <button
+                    onClick={() => disconnect()}
+                    title="Disconnect wallet"
+                    className="h-9 w-9 rounded-xl border border-destructive/20 bg-destructive/5 hover:bg-destructive/10 text-destructive flex items-center justify-center transition-all"
+                  >
+                    <LogOut size={15} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={openConnectModal}
+                  className="h-9 px-4 rounded-xl font-semibold text-sm bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:opacity-90 transition-opacity shadow-sm"
+                >
+                  Connect Wallet
+                </button>
               )}
             </div>
           )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-border bg-card/40 hover:bg-card/80 text-muted-foreground hover:text-foreground transition-all"
-            aria-label="Toggle theme"
-          >
-            {isDark ? (
-              /* Sun icon */
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
-              </svg>
-            ) : (
-              /* Moon icon */
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-          </button>
-
-          <ConnectButton.Custom>
-            {({ openConnectModal, account, mounted }) => (
-              <div
-                aria-hidden={!mounted}
-                className="inline-flex"
-              >
-                {account ? (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      className="rounded-full border-luxury/40 bg-charcoal/60 hover:bg-charcoal/80 text-foreground px-4 h-9"
-                    >
-                      {account.displayName}
-                    </Button>
-                    <Button
-                      onClick={() => disconnect()}
-                      className="h-9 px-3 rounded-full bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary text-primary-foreground"
-                      title="Disconnect wallet"
-                    >
-                      Logout
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    onClick={openConnectModal}
-                    className="rounded-full h-9 px-5 font-medium bg-gradient-to-r from-primary to-secondary hover:from-secondary hover:to-primary text-primary-foreground"
-                  >
-                    Connect Wallet
-                  </Button>
-                )}
-              </div>
-            )}
-          </ConnectButton.Custom>
-        </div>
+        </ConnectButton.Custom>
       </div>
     </header>
   );
 }
-
