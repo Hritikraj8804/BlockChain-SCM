@@ -14,6 +14,7 @@ import { useState, useEffect } from 'react';
 import { CONTRACT_ADDRESS, CONTRACT_ABI } from '@/constants/contract';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { TrackOrder } from '@/components/qr/TrackOrder';
+import { LandingPage } from '@/components/landing/LandingPage';
 
 function MainApp({ isDark, toggleTheme }) {
   const { role, isLoading, isConnected, isOwner, ownerAddress, ownerError, roleError } = useRole();
@@ -188,6 +189,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<MainApp isDark={isDark} toggleTheme={toggleTheme} />} />
         <Route path="/track/order/:id" element={<TrackOrder />} />
+        <Route path="/landing" element={<LandingPage isDark={isDark} toggleTheme={toggleTheme} />} />
       </Routes>
     </Router>
   );
