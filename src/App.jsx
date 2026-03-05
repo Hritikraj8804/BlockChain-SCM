@@ -97,10 +97,17 @@ function MainApp({ isDark, toggleTheme }) {
 
     if (isLoading) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
-          <div className="text-center">
-            <div className="text-lg font-semibold mb-2 text-foreground">Loading...</div>
-            <div className="text-sm text-muted-foreground">Determining your role...</div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <div className="flex flex-col items-center gap-5">
+            <div className="relative w-14 h-14">
+              <div className="absolute inset-0 rounded-full border-2 border-border" />
+              <div className="absolute inset-0 rounded-full border-2 border-t-primary animate-spin" />
+              <div className="absolute inset-2 rounded-full bg-gradient-to-br from-primary/20 to-accent/20" />
+            </div>
+            <div className="text-center">
+              <div className="text-base font-semibold text-foreground mb-1">Loading Dashboard</div>
+              <div className="text-sm text-muted-foreground">Verifying your on-chain role…</div>
+            </div>
           </div>
         </div>
       );
@@ -122,43 +129,38 @@ function MainApp({ isDark, toggleTheme }) {
         return <DistributorDashboard />;
       default:
         return (
-          <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-background via-background to-muted/10">
-            <Card className="bg-gradient-to-br from-card to-muted/30 border-luxury">
-              <CardContent className="p-8 text-center">
-                <h2 className="text-2xl font-semibold mb-4 text-foreground">No Role Assigned</h2>
-                <p className="text-muted-foreground mb-2">
-                  Your address ({address?.slice(0, 6)}...{address?.slice(-4)}) is not registered in the system.
-                </p>
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="mt-4 space-y-2 text-xs text-muted-foreground">
-                    {ownerError && (
-                      <p className="text-destructive">
-                        Error: Could not fetch contract owner. Make sure the contract is deployed at {CONTRACT_ADDRESS}
-                      </p>
-                    )}
-                    {ownerAddress && (
-                      <p>
-                        Contract Owner: {ownerAddress.slice(0, 6)}...{ownerAddress.slice(-4)}
-                      </p>
-                    )}
-                    {!ownerAddress && !ownerError && (
-                      <p>Loading contract owner...</p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+          <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] p-6">
+            <div className="max-w-sm w-full rounded-2xl border border-border bg-card p-8 text-center shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold mb-2 text-foreground">No Role Assigned</h2>
+              <p className="text-muted-foreground text-sm mb-4 leading-relaxed">
+                Address <span className="font-mono text-foreground">{address?.slice(0, 6)}…{address?.slice(-4)}</span> is not registered. Ask the Owner to assign you a role.
+              </p>
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-4 space-y-1.5 text-xs text-muted-foreground border-t border-border pt-4">
+                  {ownerError && (
+                    <p className="text-destructive">Cannot fetch contract owner at {CONTRACT_ADDRESS}</p>
+                  )}
+                  {ownerAddress && <p>Owner: {ownerAddress.slice(0, 6)}…{ownerAddress.slice(-4)}</p>}
+                  {!ownerAddress && !ownerError && <p className="animate-pulse">Fetching contract owner…</p>}
+                </div>
+              )}
+            </div>
           </div>
         );
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       {isConnected && <Header isDark={isDark} toggleTheme={toggleTheme} />}
-      <div className="flex max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6 w-full flex-1">
+      <div className="flex flex-1 overflow-hidden">
         {isConnected && <Sidebar />}
-        <main className="flex-1 overflow-auto bg-transparent">
+        <main className="flex-1 overflow-y-auto">
           {renderDashboard()}
         </main>
       </div>
